@@ -61,7 +61,15 @@ jobs:
         NODE_OPTIONS: --openssl-legacy-provider
 
     - name: Copy environment file
-      run: cp .env.example .env
+      run: |
+        if [ -f .env.example ]; then
+          cp .env.example .env
+        else
+          echo "Warning: .env.example not found, creating basic .env"
+          echo "NODE_ENV=test" > .env
+          echo "DB_HOST=localhost" >> .env
+          echo "DB_PORT=5432" >> .env
+        fi
 
     - name: Lint code
       run: npm run lint
