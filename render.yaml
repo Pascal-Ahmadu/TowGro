@@ -7,43 +7,43 @@ databases:
 
   - name: towgrow-redis
     type: redis
-    plan: redis-free
+    plan: free
+    ipAllowList: []
 
 services:
   - type: web
     name: towgrow-auth
     envVars:
-      # PostgreSQL connection (Neon)
+      # PostgreSQL connection
       - key: DB_HOST
-        value: ep-cool-heart-a46vowsa-pooler.us-east-1.aws.neon.tech
+        fromDatabase:
+          name: towgrow-db
+          property: host
       - key: DB_PORT
         value: 5432
       - key: DB_USER
-        value: neondb_owner
+        fromDatabase:
+          name: towgrow-db
+          property: user
       - key: DB_PASS
-        value: npg_1O5EbCwyePXM
+        fromDatabase:
+          name: towgrow-db
+          property: password
       - key: DB_NAME
-        value: neondb
+        fromDatabase:
+          name: towgrow-db
+          property: database
         
-      # Redis connection (Render)
+      # Redis connection
       - key: REDIS_HOST
         fromService:
           name: towgrow-redis
           type: redis
           property: host
       - key: REDIS_PORT
-        fromService:
-          name: towgrow-redis
-          type: redis
-          property: port
+        value: 6379
       - key: REDIS_PASSWORD
         fromService:
           name: towgrow-redis
           type: redis
           property: password
-
-  - type: redis
-    name: towgrow-redis
-    ipAllowList: []
-    plan: free  # This should be changed to match Render's plan name
-    database: towgrow-db
