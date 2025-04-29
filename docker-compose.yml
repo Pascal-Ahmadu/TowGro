@@ -25,9 +25,24 @@ services:
   postgres:
     image: postgres:17
     environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=manchester
+      - POSTGRES_USER=app_admin
+      - POSTGRES_PASSWORD=StrongerPassword123!
       - POSTGRES_DB=towgrow_app
+      - POSTGRES_APP_USER=auth_service
+      - POSTGRES_APP_PASSWORD=ServicePassword456$
+    command: >
+      sh -c '
+      docker-entrypoint.sh postgres &
+      sleep 5
+      psql -U app_admin -d towgrow_app -c "CREATE USER $$POSTGRES_APP_USER WITH PASSWORD '$$POSTGRES_APP_PASSWORD';"
+      psql -U app_admin -d towgrow_app -c "GRANT CONNECT, TEMPORARY ON DATABASE towgrow_app TO $$POSTGRES_APP_USER;"
+      psql -U app_admin -d towgrow_app -c "GRANT USAGE ON SCHEMA public TO $$POSTGRES_APP_USER;"
+      wait'
+      
+  app:
+    environment:
+      - DB_USER=auth_service  # Changed from postgres
+      - DB_PASS=ServicePassword456$
     volumes:
       - pgdata:/var/lib/postgresql/data
 
