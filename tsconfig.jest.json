@@ -4,7 +4,10 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "allowJs": true,
-    "types": ["jest"],
-    "target": "ES6"
+    "types": ["jest", "node"],
+    "target": "ES6",
+    "moduleResolution": "node",
+    "resolveJsonModule": true,
+    "isolatedModules": true
   }
 }
