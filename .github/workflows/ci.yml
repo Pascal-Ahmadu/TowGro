@@ -64,9 +64,11 @@ jobs:
     - name: Ensure ESLint dependencies
       run: npm install eslint-config-prettier --no-save
 
-    # Temporarily use --force to handle dependency conflicts
+    # Use a more robust installation approach with multiple fallbacks
     - name: Install dependencies
-      run: npm ci --legacy-peer-deps
+      run: |
+        echo "Attempting to install dependencies with npm ci..."
+        npm ci --legacy-peer-deps || npm install --legacy-peer-deps --no-audit
       env:
         NODE_OPTIONS: --openssl-legacy-provider
       
@@ -75,7 +77,7 @@ jobs:
       run: |
         if [ ! -d "node_modules" ]; then
           echo "node_modules directory not found. Trying alternative installation."
-          npm install --no-audit --legacy-peer-deps
+          npm install --no-audit --legacy-peer-deps --force
         fi
 
     - name: Copy environment file

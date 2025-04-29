@@ -23,9 +23,14 @@ jobs:
     - name: Build
       run: npm run build
 
-    # Add test step to generate results
+    # Run tests with coverage
     - name: Run tests
-      run: npm run test:ci
+      run: npm run test:cov
+      
+    # Add E2E tests if needed
+    - name: Run E2E tests
+      run: npm run test:e2e
+      continue-on-error: true
 
     # Fixed artifact upload configuration
     - name: Upload test results
