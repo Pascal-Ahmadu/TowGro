@@ -1,0 +1,1 @@
+export const PAYSTACK_CLIENT = 'PAYSTACK_CLIENT';

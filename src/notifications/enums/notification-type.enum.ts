@@ -1,0 +1,12 @@
+export enum NotificationType {
+  SMS = 'SMS',
+  EMAIL = 'EMAIL',
+  PUSH = 'PUSH',
+  PAYMENT = 'PAYMENT',
+  STATUS_UPDATE = 'STATUS_UPDATE',
+  SYSTEM_ALERT = 'SYSTEM_ALERT',
+  GENERAL = 'GENERAL',  
+  DISPATCH = 'DISPATCH',
+  USER = 'USER',
+  VEHICLE = 'VEHICLE'
+}

@@ -1,0 +1,4 @@
+{
+  "migrations": ["dist/migrations/**/*.js"],
+  // ... other configs ...
+}

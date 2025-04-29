@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - '3000:3000'
+    environment:
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_USER=postgres
+      - DB_PASS=manchester
+      - DB_NAME=towgrow_app
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - MAIL_HOST=live.smtp.mailtrap.io
+      - MAIL_PORT=587  # Recommended port with STARTTLS
+      - MAIL_USER=apismtp@mailtrap.io  # Correct username from credentials
+      - MAIL_PASSWORD=8f23c750ff6bc92c1355e5539ae1bfdb
+    depends_on:
+      - postgres
+      - redis
+    command: node dist/apps/auth-service/main
+
+  postgres:
+    image: postgres:17
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=manchester
+      - POSTGRES_DB=towgrow_app
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:6
+    ports:
+      - '6379:6379'
+    volumes:
+      - redisdata:/data
+    command: redis-server --save 60 1 --loglevel warning
+
+volumes:
+  pgdata:
+  redisdata:
