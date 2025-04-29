@@ -4,7 +4,13 @@ module.exports = {
   transform: {
     '^.+\\.tsx?$': 'ts-jest',
   },
+  globals: {
+    'ts-jest': {
+      tsconfig: '<rootDir>/tsconfig.jest.json',
+    },
+  },
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
+  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.tsx?$',
   setupFilesAfterEnv: ['<rootDir>/src/__tests__/setup.ts'],
   moduleNameMapper: {
     '^@common/(.*)$': '<rootDir>/src/common/$1',
