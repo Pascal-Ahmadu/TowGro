@@ -34,7 +34,8 @@ RUN sed -i 's/clientId:/clientID:/' src/auth/strategies/google.strategy.ts && \
 RUN npm run build
 
 # Add after build step
-RUN npm run typeorm migration:run
+RUN npm run migration:run
+# Instead of: RUN npm run typeorm migration:run
 
 # Expose the application port
 EXPOSE 3000
