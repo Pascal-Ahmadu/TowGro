@@ -22,7 +22,12 @@ jobs:
     - name: Build
       run: npm run build
 
-    - name: Upload Test Results
+    # Add test step to generate results
+    - name: Run tests
+      run: npm run test:ci
+
+    # Fixed artifact upload configuration
+    - name: Upload test results
       uses: actions/upload-artifact@v4.3.3
       if: always()
       with:
