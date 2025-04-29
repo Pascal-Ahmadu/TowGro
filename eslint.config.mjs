@@ -1,15 +1,15 @@
 import eslint from '@eslint/js';
-import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
+import prettier from 'eslint-plugin-prettier';
 import globals from 'globals';
 import tseslint from '@typescript-eslint/eslint-plugin';
 import tsParser from '@typescript-eslint/parser';
 
 export default [
   {
-    ignores: ['eslint.config.mjs'],
+    ignores: ['eslint.config.mjs', 'dist/**', 'node_modules/**'],
   },
   eslint.configs.recommended,
-  // Replace the undefined config with a proper TypeScript configuration
+  // TypeScript configuration
   {
     files: ['**/*.ts'],
     languageOptions: {
@@ -20,12 +20,14 @@ export default [
     },
     plugins: {
       '@typescript-eslint': tseslint,
+      'prettier': prettier,
     },
     rules: {
       ...tseslint.configs.recommended.rules,
+      'prettier/prettier': 'warn',
     },
   },
-  eslintPluginPrettierRecommended,
+  // Instead of using eslintPluginPrettierRecommended which requires eslint-config-prettier
   {
     languageOptions: {
       globals: {
@@ -43,7 +45,8 @@ export default [
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn'
+      '@typescript-eslint/no-unsafe-argument': 'warn',
+      'no-unused-vars': 'warn',
     },
   },
 ];
