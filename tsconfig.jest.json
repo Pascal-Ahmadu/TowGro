@@ -4,6 +4,7 @@
     "module": "commonjs",
     "esModuleInterop": true,
     "allowJs": true,
-    "types": ["jest"]
+    "types": ["jest"],
+    "target": "ES6"
   }
 }
