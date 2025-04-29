@@ -1,5 +1,11 @@
 // src/tracking/entities/location.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, Index, CreateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  Index,
+  CreateDateColumn,
+} from 'typeorm';
 
 @Entity('vehicle_locations')
 export class LocationEntity {
@@ -32,16 +38,16 @@ export class LocationEntity {
   // Add vehicle identification fields
   @Column({ nullable: true })
   registrationNumber?: string;
-  
+
   @Column({ nullable: true })
   plateNumber?: string;
-  
+
   @Column({ nullable: true })
   vehicleColor?: string;
-  
+
   @Column({ nullable: true })
   vehicleMake?: string;
-  
+
   @Column({ nullable: true })
   vehicleDescription?: string;
 

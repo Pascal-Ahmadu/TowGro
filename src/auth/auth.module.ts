@@ -21,10 +21,12 @@ import { ThrottlerModule } from '@nestjs/throttler';
 // Define the createMockRedisClient function before the @Module decorator
 function createMockRedisClient() {
   const storage = new Map();
-  
+
   return {
     set: async (key, value, mode?, duration?) => {
-      console.log(`[MOCK REDIS] SET ${key} = ${value} ${mode || ''} ${duration || ''}`);
+      console.log(
+        `[MOCK REDIS] SET ${key} = ${value} ${mode || ''} ${duration || ''}`,
+      );
       storage.set(key, value);
       return 'OK';
     },
@@ -62,7 +64,7 @@ function createMockRedisClient() {
     connect: async () => {
       console.log(`[MOCK REDIS] CONNECT`);
       return Promise.resolve();
-    }
+    },
   };
 }
 
@@ -77,7 +79,7 @@ function createMockRedisClient() {
       imports: [ConfigModule],
       useFactory: (cfg: ConfigService) => ({
         secret: cfg.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: cfg.get<string>('JWT_ACCESS_EXPIRES') }
+        signOptions: { expiresIn: cfg.get<string>('JWT_ACCESS_EXPIRES') },
       }),
       inject: [ConfigService],
     }),
@@ -103,8 +105,10 @@ function createMockRedisClient() {
       useFactory: (configService: ConfigService) => {
         const redisHost = configService.get('REDIS_HOST') || 'redis';
         const redisPort = parseInt(configService.get('REDIS_PORT') || '6379');
-        console.log(`Creating Redis client for Auth module at ${redisHost}:${redisPort}`);
-        
+        console.log(
+          `Creating Redis client for Auth module at ${redisHost}:${redisPort}`,
+        );
+
         try {
           const client = new Redis({
             host: redisHost,
@@ -118,22 +122,22 @@ function createMockRedisClient() {
             enableOfflineQueue: false, // Don't queue commands when disconnected
             connectTimeout: 10000, // 10 seconds timeout
           });
-          
+
           client.on('error', (err) => {
             console.error('Redis client error:', err);
             // Don't crash the app on Redis errors
           });
-          
+
           client.on('connect', () => {
             console.log('Redis client connected successfully');
           });
-          
+
           // Create a mock Redis client if connection fails
-          client.connect().catch(err => {
+          client.connect().catch((err) => {
             console.error('Failed to connect to Redis:', err);
             console.warn('Using in-memory fallback for Redis operations');
           });
-          
+
           return client;
         } catch (error) {
           console.error('Error creating Redis client:', error);
@@ -150,13 +154,13 @@ function createMockRedisClient() {
         return new AccountLockoutService(redisClient);
       },
       inject: ['REDIS_CLIENT'],
-    }
+    },
   ],
   controllers: [AuthController],
   exports: [
-    AuthService, 
+    AuthService,
     AccountLockoutService,
-    JwtModule,  // Export JwtModule to make JwtService available to other modules
+    JwtModule, // Export JwtModule to make JwtService available to other modules
   ],
 })
 export class AuthModule {}

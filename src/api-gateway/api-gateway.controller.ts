@@ -1,5 +1,17 @@
-import { Controller, Get, Post, Body, UseGuards, UseInterceptors } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse, ApiSecurity } from '@nestjs/swagger';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiSecurity,
+} from '@nestjs/swagger';
 import { ThrottlerGuard } from '@nestjs/throttler';
 import { ApiGatewayService } from './api-gateway.service';
 import { ClassSerializerInterceptor } from '@nestjs/common';
@@ -7,7 +19,7 @@ import { ApiAuthGuard } from './guards/api-auth.guard';
 import { Public } from '../common/decorators/public.decorator';
 
 @ApiTags('api-gateway')
-@Controller('api')  // This controller handles /api/* routes
+@Controller('api') // This controller handles /api/* routes
 @UseInterceptors(ClassSerializerInterceptor)
 @UseGuards(ApiAuthGuard)
 @ApiSecurity('bearer')
@@ -17,9 +29,9 @@ export class ApiGatewayController {
   @Get()
   // Removed @Public() decorator
   @ApiOperation({ summary: 'Get API information' })
-  @ApiResponse({ 
-    status: 200, 
-    description: 'Returns API information and available routes' 
+  @ApiResponse({
+    status: 200,
+    description: 'Returns API information and available routes',
   })
   getApiInfo() {
     return {
@@ -33,7 +45,7 @@ export class ApiGatewayController {
   // healthCheck() {
   //   return { status: 'ok' };
   // }
-  
+
   @Get('routes')
   @UseGuards(ThrottlerGuard)
   @ApiOperation({ summary: 'Get available API routes' })

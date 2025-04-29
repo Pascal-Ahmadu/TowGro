@@ -19,6 +19,6 @@ import { AuthModule } from '../auth/auth.module'; // Add this import
   ],
   controllers: [TrackingController],
   providers: [TrackingGateway, TrackingService, TrackingEvents],
-  exports: [TrackingGateway, TrackingService] // Combine exports here
+  exports: [TrackingGateway, TrackingService], // Combine exports here
 })
 export class TrackingModule {}

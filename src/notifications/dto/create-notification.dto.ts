@@ -4,11 +4,11 @@ import { IsEmail, IsString, IsOptional, IsEnum, IsUUID } from 'class-validator';
 export class CreateNotificationDto {
   @IsString()
   content: string;
-  
+
   @IsOptional()
   @IsEnum(['low', 'medium', 'high'])
   importance?: string;
-  
+
   @IsOptional()
   metadata?: Record<string, any>;
 }
@@ -16,14 +16,14 @@ export class CreateNotificationDto {
 export class SendEmailDto {
   @IsEmail()
   to: string;
-  
+
   @IsString()
   subject: string;
-  
+
   @IsOptional()
   @IsString()
   text?: string;
-  
+
   @IsOptional()
   @IsString()
   html?: string;
@@ -32,9 +32,9 @@ export class SendEmailDto {
 export class SendSmsDto {
   @IsString()
   to: string;
-  
+
   @IsString()
-  message: string;  // Changed from body to message to match controller/service usage
+  message: string; // Changed from body to message to match controller/service usage
 }
 
 export class TaskbarNotificationDto {

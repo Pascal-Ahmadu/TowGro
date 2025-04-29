@@ -3,7 +3,7 @@ import {
   HealthCheckService,
   TypeOrmHealthIndicator,
   MemoryHealthIndicator,
-  DiskHealthIndicator
+  DiskHealthIndicator,
 } from '@nestjs/terminus';
 import { RedisHealth } from './redis-health';
 import { Public } from '../common/decorators/public.decorator';
@@ -15,7 +15,7 @@ export class HealthController {
     private db: TypeOrmHealthIndicator,
     private memory: MemoryHealthIndicator,
     private disk: DiskHealthIndicator,
-    private redisHealth: RedisHealth
+    private redisHealth: RedisHealth,
   ) {}
 
   @Get()
@@ -28,7 +28,8 @@ export class HealthController {
       // Add memory check
       () => this.memory.checkHeap('memory_heap', 150 * 1024 * 1024),
       // Add disk check
-      () => this.disk.checkStorage('disk', { path: 'C:\\', thresholdPercent: 0.9 })
+      () =>
+        this.disk.checkStorage('disk', { path: 'C:\\', thresholdPercent: 0.9 }),
     ]);
   }
 }

@@ -2,13 +2,29 @@ import eslint from '@eslint/js';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import globals from 'globals';
 import tseslint from '@typescript-eslint/eslint-plugin';
+import tsParser from '@typescript-eslint/parser';
 
 export default [
   {
     ignores: ['eslint.config.mjs'],
   },
   eslint.configs.recommended,
-  tseslint.configs.recommendedTypeChecked,
+  // Replace the undefined config with a proper TypeScript configuration
+  {
+    files: ['**/*.ts'],
+    languageOptions: {
+      parser: tsParser,
+      parserOptions: {
+        project: './tsconfig.json',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+    },
+    rules: {
+      ...tseslint.configs.recommended.rules,
+    },
+  },
   eslintPluginPrettierRecommended,
   {
     languageOptions: {

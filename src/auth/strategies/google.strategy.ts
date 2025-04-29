@@ -6,10 +6,12 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
   private readonly logger = new Logger(GoogleStrategy.name);
-  
+
   constructor(private configService: ConfigService) {
     const clientID = configService.getOrThrow<string>('GOOGLE_CLIENT_ID');
-    const clientSecret = configService.getOrThrow<string>('GOOGLE_CLIENT_SECRET');
+    const clientSecret = configService.getOrThrow<string>(
+      'GOOGLE_CLIENT_SECRET',
+    );
     const callbackURL = configService.getOrThrow<string>('GOOGLE_CALLBACK_URL');
 
     // Enhanced validation
@@ -23,11 +25,18 @@ export class GoogleStrategy extends PassportStrategy(Strategy, 'google') {
       callbackURL: callbackURL.trim(),
       scope: ['email', 'profile'],
     });
-    
-    this.logger.log(`Google OAuth initialized with clientID: ${clientID.substring(0,12)}...`);
+
+    this.logger.log(
+      `Google OAuth initialized with clientID: ${clientID.substring(0, 12)}...`,
+    );
   }
 
-  async validate(accessToken: string, refreshToken: string, profile: any, done: Function) {
+  async validate(
+    accessToken: string,
+    refreshToken: string,
+    profile: any,
+    done: Function,
+  ) {
     done(null, profile);
   }
 }

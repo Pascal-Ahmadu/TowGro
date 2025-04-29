@@ -15,13 +15,13 @@ export class TwoFactorService {
     const user = await this.usersService.findById(userId);
     const secret = authenticator.generateSecret();
     const appName = this.configService.get('APP_NAME', 'TowGrow');
-    
+
     const otpAuthUrl = authenticator.keyuri(user.email, appName, secret);
     const qrCodeDataUrl = await toDataURL(otpAuthUrl);
-    
+
     // Store the secret temporarily (don't save to user record until verified)
     await this.usersService.storeTempSecret(userId, secret);
-    
+
     return {
       secret,
       qrCodeDataUrl,
@@ -31,11 +31,11 @@ export class TwoFactorService {
   async verifyTwoFactorToken(userId: string, token: string) {
     const user = await this.usersService.findById(userId);
     const secret = user.tempTwoFactorSecret || user.twoFactorSecret;
-    
+
     if (!secret) {
       return false;
     }
-    
+
     return authenticator.verify({
       token,
       secret,
@@ -47,7 +47,7 @@ export class TwoFactorService {
     if (!user.tempTwoFactorSecret) {
       throw new Error('Two-factor authentication not set up');
     }
-    
+
     // Move from temporary to permanent storage
     await this.usersService.enableTwoFactor(userId, user.tempTwoFactorSecret);
     return true;

@@ -27,18 +27,25 @@ export class NotificationService {
     // Initialize Twilio client if credentials are provided
     const accountSid = this.configService.get('TWILIO_ACCOUNT_SID');
     const authToken = this.configService.get('TWILIO_AUTH_TOKEN');
-    
+
     if (accountSid && authToken) {
       this.twilioClient = new Twilio(accountSid, authToken);
     }
   }
 
   // Original method renamed to sendTypedNotification to avoid duplication
-  async sendTypedNotification(userId: string, type: NotificationType, content: string, metadata?: any) {
+  async sendTypedNotification(
+    userId: string,
+    type: NotificationType,
+    content: string,
+    metadata?: any,
+  ) {
     try {
       const user = await this.usersService.findById(userId);
       if (!user) {
-        this.logger.warn(`Attempted to send notification to non-existent user: ${userId}`);
+        this.logger.warn(
+          `Attempted to send notification to non-existent user: ${userId}`,
+        );
         return false;
       }
 
@@ -67,7 +74,11 @@ export class NotificationService {
       }
 
       // Send via SMS if user has SMS notifications enabled and phone number is provided
-      if (user.preferences?.smsNotifications && user.phoneNumber && this.twilioClient) {
+      if (
+        user.preferences?.smsNotifications &&
+        user.phoneNumber &&
+        this.twilioClient
+      ) {
         const twilioPhoneNumber = this.configService.get('TWILIO_PHONE_NUMBER');
         await this.twilioClient.messages.create({
           body: content,
@@ -78,7 +89,10 @@ export class NotificationService {
 
       return true;
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send notification: ${error.message}`,
+        error.stack,
+      );
       return false;
     }
   }
@@ -86,7 +100,7 @@ export class NotificationService {
   async markAsRead(userId: string, notificationId: string) {
     await this.notificationRepository.update(
       { id: notificationId, userId },
-      { read: true, readAt: new Date() }
+      { read: true, readAt: new Date() },
     );
     return true;
   }
@@ -111,10 +125,12 @@ export class NotificationService {
     try {
       const user = await this.usersService.findById(userId);
       if (!user) {
-        this.logger.warn(`Attempted to send notification to non-existent user: ${userId}`);
+        this.logger.warn(
+          `Attempted to send notification to non-existent user: ${userId}`,
+        );
         return null;
       }
-      
+
       // Store in database
       const savedNotification = await this.notificationRepository.save({
         userId,
@@ -124,26 +140,29 @@ export class NotificationService {
         read: false,
         createdAt: new Date(),
       });
-      
+
       // Send via WebSocket if user is online
       this.trackingGateway.server.to(`user_${userId}`).emit('notification', {
         id: savedNotification.id,
         content: notification.content,
         timestamp: savedNotification.createdAt.toISOString(),
       });
-      
+
       // Send via email if it's important
       if (user.email && notification.importance === 'high') {
         await this.mailService.sendNotificationEmail(
           user.email,
           notification.content,
-          'IMPORTANT'
+          'IMPORTANT',
         );
       }
-      
+
       return savedNotification;
     } catch (error) {
-      this.logger.error(`Failed to send notification: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to send notification: ${error.message}`,
+        error.stack,
+      );
       return null;
     }
   }

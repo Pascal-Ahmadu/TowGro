@@ -1,20 +1,20 @@
-import { 
+import {
   Injectable,
-  forwardRef, 
-  InternalServerErrorException, 
+  forwardRef,
+  InternalServerErrorException,
   BadRequestException,
   NotFoundException,
   Logger,
   Inject,
-  ForbiddenException
+  ForbiddenException,
 } from '@nestjs/common';
 import * as crypto from 'crypto';
-import { 
-  CreatePaymentDto, 
-  VerifyPaymentDto, 
+import {
+  CreatePaymentDto,
+  VerifyPaymentDto,
   RefundPaymentDto,
   PaymentResponseDto,
-  WebhookPayloadDto
+  WebhookPayloadDto,
 } from './dto/payment.dto';
 
 import { ConfigService } from '@nestjs/config';
@@ -86,30 +86,33 @@ export class PaymentService {
     ZAR: 100, // Cents to Rand
     // Add other currencies as needed
   };
-  
+
   // Cache of valid Paystack IPs with 1-day TTL
-  private paystackIpCache: { ips: string[], expiresAt: Date } | null = null;
+  private paystackIpCache: { ips: string[]; expiresAt: Date } | null = null;
 
   constructor(
     @InjectRepository(Transaction)
     private readonly transactionRepository: Repository<Transaction>,
-    
+
     @Inject(PAYSTACK_CLIENT)
     private readonly paystackClient: any,
-    
+
     private readonly configService: ConfigService,
-    
+
     @Inject(forwardRef(() => AuthService))
     private readonly authService: AuthService,
-    
+
     @Inject(forwardRef(() => UsersService))
     private readonly userService: UsersService, // Add missing comma here
-    
+
     @InjectRepository(PaymentMethod) // Add this decorator
     private paymentMethodRepository: Repository<PaymentMethod>,
   ) {
     console.log('PaymentService dependencies verified:');
-    console.log('Paystack Client:', this.paystackClient ? '✅ Available' : '❌ Missing');
+    console.log(
+      'Paystack Client:',
+      this.paystackClient ? '✅ Available' : '❌ Missing',
+    );
   }
 
   /**
@@ -119,15 +122,17 @@ export class PaymentService {
    * @returns Payment authorization URL and reference
    */
   async initializePayment(
-    dto: CreatePaymentDto, 
-    requestContext?: RequestContext
+    dto: CreatePaymentDto,
+    requestContext?: RequestContext,
   ): Promise<PaymentResponseDto<any>> {
     try {
       this.logger.log(`Initializing payment for reference: ${dto.reference}`);
-      
+
       // Create sanitized metadata to prevent injection attacks
-      const safeMetadata = dto.metadata ? this.sanitizeMetadata(dto.metadata) : undefined;
-      
+      const safeMetadata = dto.metadata
+        ? this.sanitizeMetadata(dto.metadata)
+        : undefined;
+
       // Add request context for security tracking if provided
       if (requestContext) {
         const contextMetadata = {
@@ -135,17 +140,17 @@ export class PaymentService {
             ipAddress: requestContext.ipAddress,
             timestamp: new Date().toISOString(),
             // Don't store full user agent, just extract browser/device info
-            client: this.extractClientInfo(requestContext.userAgent || '')
-          }
+            client: this.extractClientInfo(requestContext.userAgent || ''),
+          },
         };
-        
+
         if (safeMetadata) {
           dto.metadata = { ...safeMetadata, ...contextMetadata };
         } else {
           dto.metadata = contextMetadata;
         }
       }
-      
+
       // Add anti-fraud measures
       const response = await this.paystackClient.transaction.initialize({
         email: dto.customerEmail,
@@ -154,11 +159,20 @@ export class PaymentService {
         currency: dto.currency,
         metadata: dto.metadata ? JSON.stringify(dto.metadata) : undefined,
         // Add additional security parameters as supported by Paystack
-        channels: ['card', 'bank', 'ussd', 'qr', 'mobile_money', 'bank_transfer'],
+        channels: [
+          'card',
+          'bank',
+          'ussd',
+          'qr',
+          'mobile_money',
+          'bank_transfer',
+        ],
       });
-      
+
       if (!response.data || !response.status) {
-        this.logger.warn(`Payment initialization failed with status: ${response.status}`);
+        this.logger.warn(
+          `Payment initialization failed with status: ${response.status}`,
+        );
         throw new BadRequestException('Payment initialization failed');
       }
 
@@ -171,12 +185,14 @@ export class PaymentService {
         status: 'pending',
         metadata: dto.metadata ? JSON.stringify(dto.metadata) : undefined, // Add JSON.stringify
         ipAddress: requestContext?.ipAddress,
-        userAgent: requestContext?.userAgent?.substring(0, 255) // Limit length to prevent DB issues
+        userAgent: requestContext?.userAgent?.substring(0, 255), // Limit length to prevent DB issues
       });
       await this.transactionRepository.save(transaction);
 
-      this.logger.log(`Successfully initialized payment for reference: ${dto.reference}`);
-      
+      this.logger.log(
+        `Successfully initialized payment for reference: ${dto.reference}`,
+      );
+
       // Return only necessary info
       return {
         success: true,
@@ -185,10 +201,13 @@ export class PaymentService {
           authorizationUrl: response.data.authorization_url,
           reference: response.data.reference,
           accessCode: response.data.access_code,
-        }
+        },
       };
     } catch (error) {
-      return this.handlePaymentError(error, `Failed to initialize payment for reference: ${dto.reference}`);
+      return this.handlePaymentError(
+        error,
+        `Failed to initialize payment for reference: ${dto.reference}`,
+      );
     }
   }
 
@@ -197,11 +216,16 @@ export class PaymentService {
    * @param reference Payment reference
    * @returns Transaction entity or null
    */
-  async findTransactionByReference(reference: string): Promise<Transaction | null> {
+  async findTransactionByReference(
+    reference: string,
+  ): Promise<Transaction | null> {
     try {
       return await this.transactionRepository.findOne({ where: { reference } });
     } catch (error) {
-      this.logger.error(`Error finding transaction ${reference}: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error finding transaction ${reference}: ${error.message}`,
+        error.stack,
+      );
       return null;
     }
   }
@@ -214,21 +238,25 @@ export class PaymentService {
   async getPaymentDetails(reference: string): Promise<PaymentResponseDto<any>> {
     try {
       // First check local database
-      const transaction = await this.transactionRepository.findOne({ where: { reference } });
+      const transaction = await this.transactionRepository.findOne({
+        where: { reference },
+      });
       if (!transaction) {
-        throw new NotFoundException(`Transaction with reference ${reference} not found`);
+        throw new NotFoundException(
+          `Transaction with reference ${reference} not found`,
+        );
       }
-      
+
       // If transaction exists but not yet verified/completed, verify with Paystack
       if (transaction.status === 'pending') {
         const verifyDto = new VerifyPaymentDto();
         verifyDto.reference = reference;
         return this.verifyPayment(verifyDto);
       }
-      
+
       // Return transaction data from database
       const divisor = this.getCurrencyDivisor(transaction.currency);
-      
+
       return {
         success: true,
         message: 'Payment details retrieved successfully',
@@ -240,10 +268,13 @@ export class PaymentService {
           customerEmail: transaction.customerEmail,
           createdAt: transaction.createdAt,
           updatedAt: transaction.updatedAt,
-        }
+        },
       };
     } catch (error) {
-      return this.handlePaymentError(error, `Failed to get payment details for reference: ${reference}`);
+      return this.handlePaymentError(
+        error,
+        `Failed to get payment details for reference: ${reference}`,
+      );
     }
   }
 
@@ -255,33 +286,53 @@ export class PaymentService {
   async verifyPayment(dto: VerifyPaymentDto): Promise<PaymentResponseDto<any>> {
     try {
       this.logger.log(`Verifying payment for reference: ${dto.reference}`);
-      
+
       // Implement retry mechanism for network resilience
-      const response = await this.retryOperation<PaystackResponse<PaystackTransaction>>(
+      const response = await this.retryOperation<
+        PaystackResponse<PaystackTransaction>
+      >(
         () => this.paystackClient.transaction.verify(dto.reference),
         3, // Retry 3 times
-        1000 // Initial delay of 1 second, will be doubled each retry
+        1000, // Initial delay of 1 second, will be doubled each retry
       );
 
       if (!response.data) {
-        this.logger.warn(`Payment verification failed for reference: ${dto.reference}`);
-        throw new NotFoundException(`Transaction with reference ${dto.reference} not found`);
+        this.logger.warn(
+          `Payment verification failed for reference: ${dto.reference}`,
+        );
+        throw new NotFoundException(
+          `Transaction with reference ${dto.reference} not found`,
+        );
       }
 
-      const { status, gateway_response, amount, paid_at, customer, currency = 'NGN' } = response.data;
+      const {
+        status,
+        gateway_response,
+        amount,
+        paid_at,
+        customer,
+        currency = 'NGN',
+      } = response.data;
       const divisor = this.getCurrencyDivisor(currency);
-      
+
       // Update transaction in database
       await this.transactionRepository.update(
         { reference: dto.reference },
-        { 
-          status: status === 'success' ? 'success' : status === 'failed' ? 'failed' : 'pending',
-          metadata: JSON.stringify(response.data)  // Add JSON.stringify
-        }
+        {
+          status:
+            status === 'success'
+              ? 'success'
+              : status === 'failed'
+                ? 'failed'
+                : 'pending',
+          metadata: JSON.stringify(response.data), // Add JSON.stringify
+        },
       );
-      
-      this.logger.log(`Payment verification completed for reference: ${dto.reference} with status: ${status}`);
-      
+
+      this.logger.log(
+        `Payment verification completed for reference: ${dto.reference} with status: ${status}`,
+      );
+
       // Return sanitized response
       return {
         success: true,
@@ -293,10 +344,12 @@ export class PaymentService {
           amount: amount / divisor, // Convert from minor to major currency unit
           currency,
           paidAt: paid_at,
-          customer: customer ? {
-            email: customer.email,
-            name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
-          } : null,
+          customer: customer
+            ? {
+                email: customer.email,
+                name: `${customer.first_name || ''} ${customer.last_name || ''}`.trim(),
+              }
+            : null,
           // Only include essential info from raw response
           paymentDetails: {
             processor: 'paystack',
@@ -307,11 +360,14 @@ export class PaymentService {
             last4: response.data.authorization?.last4,
             expMonth: response.data.authorization?.exp_month,
             expYear: response.data.authorization?.exp_year,
-          }
-        }
+          },
+        },
       };
     } catch (error) {
-      return this.handlePaymentError(error, `Failed to verify payment for reference: ${dto.reference}`);
+      return this.handlePaymentError(
+        error,
+        `Failed to verify payment for reference: ${dto.reference}`,
+      );
     }
   }
 
@@ -323,22 +379,29 @@ export class PaymentService {
   async refundPayment(dto: RefundPaymentDto): Promise<PaymentResponseDto<any>> {
     try {
       this.logger.log(`Processing refund for reference: ${dto.reference}`);
-      
+
       // First verify the transaction exists and is successful
-      const verifyResult = await this.verifyPayment({ reference: dto.reference });
+      const verifyResult = await this.verifyPayment({
+        reference: dto.reference,
+      });
       if (!verifyResult.success || verifyResult.data?.status !== 'success') {
-        throw new BadRequestException(`Cannot refund transaction that is not successful. Current status: ${verifyResult.data?.status || 'unknown'}`);
+        throw new BadRequestException(
+          `Cannot refund transaction that is not successful. Current status: ${verifyResult.data?.status || 'unknown'}`,
+        );
       }
-      
+
       // Implement retry mechanism for network resilience
-      const response = await this.retryOperation<PaystackResponse<PaystackRefund>>(
-        () => this.paystackClient.refund.create({
-          transaction: dto.reference,
-          amount: dto.amount,
-          ...(dto.reason && { reason: dto.reason })
-        }),
+      const response = await this.retryOperation<
+        PaystackResponse<PaystackRefund>
+      >(
+        () =>
+          this.paystackClient.refund.create({
+            transaction: dto.reference,
+            amount: dto.amount,
+            ...(dto.reason && { reason: dto.reason }),
+          }),
         2, // Retry twice
-        1000 // Initial delay of 1 second
+        1000, // Initial delay of 1 second
       );
 
       if (!response.data || !response.status) {
@@ -354,19 +417,22 @@ export class PaymentService {
       const currentDate = new Date().toISOString();
       await this.transactionRepository.update(
         { reference: dto.reference },
-        { 
+        {
           status: 'refunded',
-          metadata: { // Store as a normal object
+          metadata: {
+            // Store as a normal object
             ...(verifyResult.data?.paymentDetails || {}),
             refund: response.data,
             refundedAt: currentDate,
-            refundReason: dto.reason
-          }
-        }
+            refundReason: dto.reason,
+          },
+        },
       );
 
-      this.logger.log(`Successfully processed refund for reference: ${dto.reference}`);
-      
+      this.logger.log(
+        `Successfully processed refund for reference: ${dto.reference}`,
+      );
+
       return {
         success: true,
         message: 'Refund processed successfully',
@@ -377,10 +443,13 @@ export class PaymentService {
           currency,
           status: response.data.status,
           createdAt: response.data.created_at,
-        }
+        },
       };
     } catch (error) {
-      return this.handlePaymentError(error, `Failed to process refund for reference: ${dto.reference}`);
+      return this.handlePaymentError(
+        error,
+        `Failed to process refund for reference: ${dto.reference}`,
+      );
     }
   }
 
@@ -392,35 +461,40 @@ export class PaymentService {
   async isValidPaystackIp(ipAddress: string): Promise<boolean> {
     try {
       // For development and testing, allow all IPs if explicitly configured
-      if (this.configService.get<string>('NODE_ENV') === 'development' && 
-          this.configService.get<boolean>('ALLOW_ALL_IPS_FOR_WEBHOOKS')) {
+      if (
+        this.configService.get<string>('NODE_ENV') === 'development' &&
+        this.configService.get<boolean>('ALLOW_ALL_IPS_FOR_WEBHOOKS')
+      ) {
         return true;
       }
-      
+
       // Check cache first
       if (this.paystackIpCache && new Date() < this.paystackIpCache.expiresAt) {
         return this.paystackIpCache.ips.includes(ipAddress);
       }
-      
+
       // For production, hardcode known Paystack IPs for fallback
       // These should be updated regularly
       const knownPaystackIps = [
         '52.31.139.75',
         '52.49.173.169',
-        '52.214.14.220'
+        '52.214.14.220',
         // Add other Paystack IPs
       ];
-      
+
       // In a real implementation, you would fetch these from Paystack's API
       // For this example, we'll use the hardcoded list
       this.paystackIpCache = {
         ips: knownPaystackIps,
-        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours from now
       };
-      
+
       return knownPaystackIps.includes(ipAddress);
     } catch (error) {
-      this.logger.error(`Error validating Paystack IP: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error validating Paystack IP: ${error.message}`,
+        error.stack,
+      );
       // Fail closed (deny) for security
       return false;
     }
@@ -432,28 +506,35 @@ export class PaymentService {
    * @param signature The signature from x-paystack-signature header
    * @returns Boolean indicating if signature is valid
    */
-  verifyWebhookSignature(payload: WebhookPayloadDto, signature: string): boolean {
+  verifyWebhookSignature(
+    payload: WebhookPayloadDto,
+    signature: string,
+  ): boolean {
     try {
       const secret = this.configService.get<string>('PAYSTACK_SECRET_KEY');
       if (!secret) {
-        this.logger.error('Missing PAYSTACK_SECRET_KEY in environment variables');
+        this.logger.error(
+          'Missing PAYSTACK_SECRET_KEY in environment variables',
+        );
         return false;
       }
 
       // Convert payload to string if it's not already
-      const payloadString = typeof payload === 'string' 
-        ? payload 
-        : JSON.stringify(payload);
+      const payloadString =
+        typeof payload === 'string' ? payload : JSON.stringify(payload);
 
       const hash = crypto
         .createHmac('sha512', secret)
         .update(payloadString)
         .digest('hex');
-      
+
       // Use timing-safe comparison to prevent timing attacks
       return this.timingSafeEqual(hash, signature);
     } catch (error) {
-      this.logger.error(`Error verifying webhook signature: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error verifying webhook signature: ${error.message}`,
+        error.stack,
+      );
       return false;
     }
   }
@@ -466,9 +547,11 @@ export class PaymentService {
     try {
       const event = payload.event;
       const data = payload.data;
-      
-      this.logger.log(`Processing webhook event: ${event} for reference: ${data?.reference || 'N/A'}`);
-    
+
+      this.logger.log(
+        `Processing webhook event: ${event} for reference: ${data?.reference || 'N/A'}`,
+      );
+
       // Use a queue or event system for production workloads
       // For this example, we'll process directly
       switch (event) {
@@ -476,69 +559,76 @@ export class PaymentService {
           const currentDate = new Date().toISOString();
           await this.transactionRepository.update(
             { reference: data.reference },
-            { 
+            {
               status: 'success',
-              metadata: JSON.stringify({ // Wrap in JSON.stringify
+              metadata: JSON.stringify({
+                // Wrap in JSON.stringify
                 ...data,
                 webhookProcessedAt: currentDate,
-                event: event
-              })
-            }
+                event: event,
+              }),
+            },
           );
           break;
         }
-          
+
         case 'charge.failed': {
           const currentDate = new Date().toISOString();
           await this.transactionRepository.update(
             { reference: data.reference },
-            { 
+            {
               status: 'failed',
-              metadata: JSON.stringify({ // Wrap in JSON.stringify
+              metadata: JSON.stringify({
+                // Wrap in JSON.stringify
                 ...data,
                 webhookProcessedAt: currentDate,
-                event: event
-              })
-            }
+                event: event,
+              }),
+            },
           );
           break;
         }
-          
+
         case 'refund.processed': {
           const currentDate = new Date().toISOString();
           await this.transactionRepository.update(
             { reference: data.reference },
-            { 
+            {
               status: 'refunded',
-              metadata: JSON.stringify({ // Wrap in JSON.stringify
+              metadata: JSON.stringify({
+                // Wrap in JSON.stringify
                 ...data,
                 webhookProcessedAt: currentDate,
-                event: event
-              })
-            }
+                event: event,
+              }),
+            },
           );
           break;
         }
-        
+
         default: {
           this.logger.warn(`Unhandled event type: ${event}`);
           // Store unprocessed events
           const currentDate = new Date().toISOString();
           await this.transactionRepository.update(
             { reference: data.reference },
-            { 
-              metadata: JSON.stringify({ // Wrap in JSON.stringify
+            {
+              metadata: JSON.stringify({
+                // Wrap in JSON.stringify
                 ...data,
                 webhookProcessedAt: currentDate,
                 event: event,
-                unprocessed: true
-              })
-            }
+                unprocessed: true,
+              }),
+            },
           );
         }
       }
     } catch (error) {
-      this.logger.error(`Error processing webhook event: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error processing webhook event: ${error.message}`,
+        error.stack,
+      );
       // For webhooks, we don't rethrow to acknowledge receipt to Paystack
       // Consider using a retry mechanism or dead letter queue in production
     }
@@ -550,36 +640,45 @@ export class PaymentService {
    * @param logMessage Message to log with the error
    * @returns PaymentResponseDto with error information
    */
-  private handlePaymentError(error: any, logMessage: string): PaymentResponseDto {
-    this.logger.error(`${logMessage}: ${error.message || 'Unknown error'}`, error.stack);
-    
+  private handlePaymentError(
+    error: any,
+    logMessage: string,
+  ): PaymentResponseDto {
+    this.logger.error(
+      `${logMessage}: ${error.message || 'Unknown error'}`,
+      error.stack,
+    );
+
     // Map Paystack errors to appropriate HTTP exceptions
     if (error.response?.data?.message) {
       const paystackError = error.response.data;
-      
+
       if (paystackError.status === false) {
         return {
           success: false,
           message: 'Payment processing failed',
-          error: paystackError.message
+          error: paystackError.message,
         };
       }
     }
-    
-    if (error instanceof BadRequestException || 
-        error instanceof NotFoundException) {
+
+    if (
+      error instanceof BadRequestException ||
+      error instanceof NotFoundException
+    ) {
       return {
         success: false,
         message: 'Request error',
-        error: error.message
+        error: error.message,
       };
     }
-    
+
     // Generic error for all other cases
     return {
       success: false,
       message: 'Payment processing error',
-      error: 'An unexpected error occurred while processing your payment request.'
+      error:
+        'An unexpected error occurred while processing your payment request.',
     };
   }
 
@@ -602,14 +701,14 @@ export class PaymentService {
     if (a.length !== b.length) {
       return false;
     }
-    
+
     // In Node.js >=6.6.0, use:
     if (crypto.timingSafeEqual) {
       const bufA = Buffer.from(a);
       const bufB = Buffer.from(b);
       return crypto.timingSafeEqual(bufA, bufB);
     }
-    
+
     // Fallback implementation
     let result = 0;
     for (let i = 0; i < a.length; i++) {
@@ -626,24 +725,25 @@ export class PaymentService {
   private sanitizeMetadata(metadata: Record<string, any>): Record<string, any> {
     // Deep clone to avoid modifying the original
     const sanitized = JSON.parse(JSON.stringify(metadata));
-    
+
     // Helper function to sanitize strings recursively
     const sanitizeObj = (obj: any): any => {
       if (obj === null || obj === undefined) {
         return obj;
       }
-      
+
       if (typeof obj === 'string') {
         // Remove potential XSS vectors
-        return obj.replace(/<(script|iframe|object|embed|form)/gi, '&lt;$1')
-                 .replace(/on\w+=/gi, 'data-removed=')
-                 .replace(/javascript:/gi, 'removed:');
+        return obj
+          .replace(/<(script|iframe|object|embed|form)/gi, '&lt;$1')
+          .replace(/on\w+=/gi, 'data-removed=')
+          .replace(/javascript:/gi, 'removed:');
       }
-      
+
       if (Array.isArray(obj)) {
-        return obj.map(item => sanitizeObj(item));
+        return obj.map((item) => sanitizeObj(item));
       }
-      
+
       if (typeof obj === 'object') {
         const result: Record<string, any> = {};
         for (const [key, value] of Object.entries(obj)) {
@@ -655,10 +755,10 @@ export class PaymentService {
         }
         return result;
       }
-      
+
       return obj;
     };
-    
+
     return sanitizeObj(sanitized);
   }
 
@@ -671,7 +771,7 @@ export class PaymentService {
     // Simple extraction of browser and OS
     // For production, consider using a proper UA parser library
     let client = 'Unknown';
-    
+
     if (userAgent.includes('Mozilla')) {
       if (userAgent.includes('Chrome')) {
         client = 'Chrome';
@@ -689,7 +789,7 @@ export class PaymentService {
     } else if (userAgent.includes('curl')) {
       client = 'Curl';
     }
-    
+
     if (userAgent.includes('Windows')) {
       client += ' / Windows';
     } else if (userAgent.includes('Macintosh')) {
@@ -701,7 +801,7 @@ export class PaymentService {
     } else if (userAgent.includes('iPhone') || userAgent.includes('iPad')) {
       client += ' / iOS';
     }
-    
+
     return client;
   }
 
@@ -713,32 +813,37 @@ export class PaymentService {
    * @returns Promise resolving to operation result
    */
   private async retryOperation<T>(
-    operation: () => Promise<T>, 
-    maxRetries: number, 
-    initialDelay: number
+    operation: () => Promise<T>,
+    maxRetries: number,
+    initialDelay: number,
   ): Promise<T> {
     let lastError: any;
-    
+
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
         return await operation();
       } catch (error) {
         lastError = error;
-        
+
         // Don't retry for certain error types
-        if (error instanceof BadRequestException || 
-            error instanceof ForbiddenException) {
+        if (
+          error instanceof BadRequestException ||
+          error instanceof ForbiddenException
+        ) {
           throw error;
         }
-        
+
         if (attempt < maxRetries) {
           const delay = initialDelay * Math.pow(2, attempt); // Exponential backoff
-          this.logger.warn(`Operation failed, retrying in ${delay}ms (${attempt + 1}/${maxRetries})`, error.stack);
-          await new Promise(resolve => setTimeout(resolve, delay));
+          this.logger.warn(
+            `Operation failed, retrying in ${delay}ms (${attempt + 1}/${maxRetries})`,
+            error.stack,
+          );
+          await new Promise((resolve) => setTimeout(resolve, delay));
         }
       }
     }
-    
+
     throw lastError;
   }
 }

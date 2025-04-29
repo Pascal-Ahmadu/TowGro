@@ -16,7 +16,7 @@ export class MetricsService {
     private activeUsersGauge: Gauge<string>,
     @InjectMetric('http_request_duration_seconds')
     private httpRequestDuration: Histogram<string>,
-    private registry: Registry
+    private registry: Registry,
   ) {
     this.initializeMetrics();
     // Remove registerMetrics() call (already removed)
@@ -35,17 +35,26 @@ export class MetricsService {
   } */
 
   // Fix method parameter name to match constructor
-  incrementHttpRequests(method: string, route: string, statusCode: number): void {
-    this.httpRequestsCounter.inc({ method, route, statusCode: statusCode.toString() });
-    
+  incrementHttpRequests(
+    method: string,
+    route: string,
+    statusCode: number,
+  ): void {
+    this.httpRequestsCounter.inc({
+      method,
+      route,
+      statusCode: statusCode.toString(),
+    });
+
     // Update our metrics map
     const currentRequests = this.metrics.get('http_requests') || 0;
     this.metrics.set('http_requests', currentRequests + 1);
-    
+
     // Update error rate if status code is 4xx or 5xx
     if (statusCode >= 400) {
       const totalRequests = this.metrics.get('http_requests') || 1;
-      const errorRequests = (this.metrics.get('error_rate') || 0) * totalRequests + 1;
+      const errorRequests =
+        (this.metrics.get('error_rate') || 0) * totalRequests + 1;
       this.metrics.set('error_rate', errorRequests / totalRequests);
     }
   }
@@ -53,11 +62,11 @@ export class MetricsService {
   // Track login attempts
   incrementLoginAttempts(success: boolean): void {
     this.loginAttemptsCounter.inc({ success: success.toString() });
-    
+
     // Update our metrics map
     const currentAttempts = this.metrics.get('login_attempts') || 0;
     this.metrics.set('login_attempts', currentAttempts + 1);
-    
+
     if (success) {
       const currentSuccessful = this.metrics.get('successful_logins') || 0;
       this.metrics.set('successful_logins', currentSuccessful + 1);
@@ -76,11 +85,12 @@ export class MetricsService {
   // Fix histogram reference
   observeHttpDuration(method: string, route: string, duration: number): void {
     this.httpRequestDuration.observe({ method, route }, duration);
-    
+
     // Update average response time in our metrics map
     const currentAvg = this.metrics.get('response_time_avg') || 0;
     const totalRequests = this.metrics.get('http_requests') || 1;
-    const newAvg = ((currentAvg * (totalRequests - 1)) + duration) / totalRequests;
+    const newAvg =
+      (currentAvg * (totalRequests - 1) + duration) / totalRequests;
     this.metrics.set('response_time_avg', newAvg);
   }
 
@@ -126,7 +136,7 @@ export class MetricsService {
     this.metrics.set('login_attempts', 0);
     this.metrics.set('successful_logins', 0);
     this.metrics.set('failed_logins', 0);
-    
+
     // System metrics
     this.metrics.set('http_requests', 0);
     this.metrics.set('response_time_avg', 0);

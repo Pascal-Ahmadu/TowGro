@@ -1,6 +1,10 @@
 // metric.providers.ts
 import { Provider } from '@nestjs/common';
-import { makeCounterProvider, makeGaugeProvider, makeHistogramProvider } from '@willsoto/nestjs-prometheus';
+import {
+  makeCounterProvider,
+  makeGaugeProvider,
+  makeHistogramProvider,
+} from '@willsoto/nestjs-prometheus';
 
 export const metricProviders: Provider[] = [
   makeCounterProvider({
@@ -18,6 +22,6 @@ export const metricProviders: Provider[] = [
   makeHistogramProvider({
     name: 'app_http_request_duration_seconds',
     help: 'HTTP request duration in seconds',
-    buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10]
-  })
+    buckets: [0.1, 0.3, 0.5, 0.7, 1, 3, 5, 7, 10],
+  }),
 ];

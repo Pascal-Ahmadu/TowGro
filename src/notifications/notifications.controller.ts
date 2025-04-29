@@ -9,10 +9,10 @@ export class NotificationsController {
   @Post('email')
   async sendEmail(@Body() emailData: SendEmailDto) {
     await this.notificationsService.sendEmail(emailData);
-    return { 
+    return {
       status: 'Email queued',
       to: emailData.to,
-      subject: emailData.subject
+      subject: emailData.subject,
     };
   }
 
@@ -22,7 +22,7 @@ export class NotificationsController {
     return {
       status: 'SMS queued',
       to: smsData.to,
-      message: smsData.message
+      message: smsData.message,
     };
   }
 }

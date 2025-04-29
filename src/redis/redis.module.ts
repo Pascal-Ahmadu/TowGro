@@ -15,12 +15,12 @@ import redisConfig from './redis.config';
             port: config.get('redis.port'),
             password: config.get('redis.password'),
             tls: config.get('redis.host') !== 'localhost' ? {} : undefined,
-          }
+          },
         };
       },
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
   ],
-  exports: [RedisModule]
+  exports: [RedisModule],
 })
 export class RedisConnectionModule {}

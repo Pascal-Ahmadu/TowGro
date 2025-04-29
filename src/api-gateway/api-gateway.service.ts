@@ -12,8 +12,11 @@ export class ApiGatewayService {
 
   getApiInfo() {
     const version = this.configService.get<string>('API_VERSION', '1.0.0');
-    const environment = this.configService.get<string>('NODE_ENV', 'development');
-    
+    const environment = this.configService.get<string>(
+      'NODE_ENV',
+      'development',
+    );
+
     return {
       name: 'Auth Service API Gateway',
       version,
@@ -50,14 +53,17 @@ export class ApiGatewayService {
   async authenticate(credentials: { username: string; password: string }) {
     try {
       // Call the auth service login endpoint
-      const authServiceUrl = this.configService.get<string>('AUTH_SERVICE_URL', 'http://localhost:3001');
+      const authServiceUrl = this.configService.get<string>(
+        'AUTH_SERVICE_URL',
+        'http://localhost:3001',
+      );
       const response = await firstValueFrom(
         this.httpService.post(`${authServiceUrl}/auth/login`, {
           identifier: credentials.username,
           password: credentials.password,
-        })
+        }),
       );
-      
+
       return response.data;
     } catch (error) {
       if (error.response && error.response.status === 401) {

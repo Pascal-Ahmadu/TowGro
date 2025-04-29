@@ -10,7 +10,13 @@ import {
   WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Logger, UseGuards, UsePipes, ValidationPipe, Injectable } from '@nestjs/common';
+import {
+  Logger,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+  Injectable,
+} from '@nestjs/common';
 import { createAdapter } from '@socket.io/redis-adapter';
 import * as redis from 'redis';
 import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard';
@@ -23,10 +29,12 @@ import { ConfigService } from '@nestjs/config';
   // Fix adapter configuration
   adapter: createAdapter(
     redis.createClient({ url: process.env.REDIS_URL }),
-    redis.createClient({ url: process.env.REDIS_URL })
-  )
+    redis.createClient({ url: process.env.REDIS_URL }),
+  ),
 })
-export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
+export class TrackingGateway
+  implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
+{
   @WebSocketServer()
   server: Server;
   private readonly logger = new Logger(TrackingGateway.name);
@@ -36,7 +44,7 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   // Interface implementation
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
-    
+
     if (this.configService.get('NODE_ENV') === 'production') {
       this.setupRedisAdapter(server);
     }
@@ -59,24 +67,34 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   }
 
   // New call functionality
-  initiateCall(userId: string, callData: { callerId: string, callerName: string }) {
-    this.logger.debug(`Initiating call to user ${userId} from ${callData.callerName}`);
+  initiateCall(
+    userId: string,
+    callData: { callerId: string; callerName: string },
+  ) {
+    this.logger.debug(
+      `Initiating call to user ${userId} from ${callData.callerName}`,
+    );
     this.server.to(`user_${userId}`).emit('incoming_call', {
       callerId: callData.callerId,
       callerName: callData.callerName,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     return { success: true, message: `Call initiated to user ${userId}` };
   }
 
   // New message functionality
-  sendDirectMessage(userId: string, messageData: { senderId: string, senderName: string, content: string }) {
-    this.logger.debug(`Sending direct message to user ${userId} from ${messageData.senderName}`);
+  sendDirectMessage(
+    userId: string,
+    messageData: { senderId: string; senderName: string; content: string },
+  ) {
+    this.logger.debug(
+      `Sending direct message to user ${userId} from ${messageData.senderName}`,
+    );
     this.server.to(`user_${userId}`).emit('direct_message', {
       senderId: messageData.senderId,
       senderName: messageData.senderName,
       content: messageData.content,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     });
     return { success: true, message: `Message sent to user ${userId}` };
   }
@@ -86,15 +104,19 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   @SubscribeMessage('registerForDirectCommunication')
   handleRegisterUser(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { userId: string }
+    @MessageBody() data: { userId: string },
   ) {
     try {
       const roomName = `user_${data.userId}`;
       client.join(roomName);
-      this.logger.debug(`User ${data.userId} registered for direct communication`);
+      this.logger.debug(
+        `User ${data.userId} registered for direct communication`,
+      );
       return { success: true, message: 'Registered for direct communication' };
     } catch (error) {
-      this.logger.error(`Error registering for direct communication: ${error.message}`);
+      this.logger.error(
+        `Error registering for direct communication: ${error.message}`,
+      );
       throw new WsException('Failed to register for direct communication');
     }
   }
@@ -103,11 +125,11 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
     const pubClient = redis.createClient({
       url: `redis://${this.configService.get('REDIS_HOST')}:${this.configService.get('REDIS_PORT')}`,
     });
-    
+
     const subClient = pubClient.duplicate();
-    
+
     await Promise.all([pubClient.connect(), subClient.connect()]);
-    
+
     server.adapter(createAdapter(pubClient, subClient));
     this.logger.log('Redis adapter configured for WebSocket gateway');
   }
@@ -121,7 +143,9 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   ) {
     try {
       client.join(dto.dispatchId);
-      this.logger.debug(`Client ${client.id} joined dispatch ${dto.dispatchId}`);
+      this.logger.debug(
+        `Client ${client.id} joined dispatch ${dto.dispatchId}`,
+      );
       return { success: true, message: `Joined dispatch ${dto.dispatchId}` };
     } catch (error) {
       this.logger.error(`Error joining dispatch: ${error.message}`);
@@ -137,13 +161,13 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
       this.logger.debug(
         `Broadcasting location update for vehicle ${dto.vehicleId} ${dto.plateNumber ? `(${dto.plateNumber})` : ''} in dispatch ${dto.dispatchId}`,
       );
-      
+
       // Include timestamp and send to the dispatch room
       this.server.to(dto.dispatchId).emit('locationUpdate', {
         ...dto,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
+
       return { success: true };
     } catch (error) {
       this.logger.error(`Error broadcasting location: ${error.message}`);
@@ -173,35 +197,36 @@ export class TrackingGateway implements OnGatewayInit, OnGatewayConnection, OnGa
   @SubscribeMessage('registerVehicle')
   handleVehicleRegistration(
     @ConnectedSocket() client: Socket,
-    @MessageBody() data: { 
-      vehicleId: string, 
-      registrationNumber: string, 
-      plateNumber: string,
-      driverId: string
-    }
+    @MessageBody()
+    data: {
+      vehicleId: string;
+      registrationNumber: string;
+      plateNumber: string;
+      driverId: string;
+    },
   ) {
     try {
       // Join a room specific to this vehicle
       const vehicleRoom = `vehicle_${data.vehicleId}`;
       client.join(vehicleRoom);
-      
+
       this.logger.debug(
-        `Vehicle registered: ID=${data.vehicleId}, Reg=${data.registrationNumber}, Plate=${data.plateNumber}, Driver=${data.driverId}`
+        `Vehicle registered: ID=${data.vehicleId}, Reg=${data.registrationNumber}, Plate=${data.plateNumber}, Driver=${data.driverId}`,
       );
-      
+
       // Broadcast to admin channel that a new vehicle is registered
       this.server.to('admin_channel').emit('vehicle_registered', {
         vehicleId: data.vehicleId,
         registrationNumber: data.registrationNumber,
         plateNumber: data.plateNumber,
         driverId: data.driverId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
       });
-      
-      return { 
-        success: true, 
+
+      return {
+        success: true,
         message: 'Vehicle registered successfully',
-        vehicleId: data.vehicleId
+        vehicleId: data.vehicleId,
       };
     } catch (error) {
       this.logger.error(`Error registering vehicle: ${error.message}`);

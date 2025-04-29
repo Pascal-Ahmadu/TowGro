@@ -16,11 +16,11 @@ interface StorageRecord {
 @Injectable()
 export class RedisThrottlerStorage implements ThrottlerStorage {
   private redis: Redis;
-  
+
   constructor(private redisFactory: RedisFactory) {
     // Create a dedicated Redis client for throttling
     this.redis = this.redisFactory.createClient();
-    
+
     // Handle connection errors to prevent unhandled errors
     this.redis.on('error', (err) => {
       console.error('Redis throttler storage error:', err.message);
@@ -29,9 +29,10 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 
   async increment(key: string, ttl: number): Promise<StorageRecord> {
     const redisKey = `${KEY_PREFIX}${key}`;
-    
+
     try {
-      const storedValue = await this.redis.multi()
+      const storedValue = await this.redis
+        .multi()
         .incr(redisKey)
         .pttl(redisKey)
         .exec();
@@ -64,7 +65,7 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
 
   async getRecord(key: string): Promise<StorageRecord | null> {
     const redisKey = `${KEY_PREFIX}${key}`;
-    
+
     try {
       const [count, ttl] = await Promise.all([
         this.redis.get(redisKey),

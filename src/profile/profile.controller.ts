@@ -1,11 +1,11 @@
-import { 
-  Controller, 
-  Post, 
-  Put, 
-  UseInterceptors, 
-  UploadedFile, 
-  Body, 
-  Request 
+import {
+  Controller,
+  Post,
+  Put,
+  UseInterceptors,
+  UploadedFile,
+  Body,
+  Request,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ProfileService } from './profile.service';
@@ -19,7 +19,7 @@ export class ProfileController {
   @UseInterceptors(FileInterceptor('file'))
   async uploadDocument(
     @UploadedFile() file: Express.Multer.File,
-    @Request() req
+    @Request() req,
   ) {
     return this.profileService.uploadDocument(req.user.id, file);
   }

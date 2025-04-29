@@ -23,8 +23,8 @@ export class AuditService {
       JSON.stringify({
         action,
         timestamp: new Date().toISOString(),
-        ip: '' // Get from request
-      })
+        ip: '', // Get from request
+      }),
     );
   }
 
@@ -87,19 +87,27 @@ export class AuditService {
     }
 
     if (filters.resource) {
-      query.andWhere('audit.resource = :resource', { resource: filters.resource });
+      query.andWhere('audit.resource = :resource', {
+        resource: filters.resource,
+      });
     }
 
     if (filters.resourceId) {
-      query.andWhere('audit.resourceId = :resourceId', { resourceId: filters.resourceId });
+      query.andWhere('audit.resourceId = :resourceId', {
+        resourceId: filters.resourceId,
+      });
     }
 
     if (filters.startDate) {
-      query.andWhere('audit.timestamp >= :startDate', { startDate: filters.startDate });
+      query.andWhere('audit.timestamp >= :startDate', {
+        startDate: filters.startDate,
+      });
     }
 
     if (filters.endDate) {
-      query.andWhere('audit.timestamp <= :endDate', { endDate: filters.endDate });
+      query.andWhere('audit.timestamp <= :endDate', {
+        endDate: filters.endDate,
+      });
     }
 
     query.orderBy('audit.timestamp', 'DESC');

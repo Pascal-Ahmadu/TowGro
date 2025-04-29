@@ -8,9 +8,7 @@ export class AccountLockoutService {
   private readonly ATTEMPT_EXPIRY = 60 * 60; // 1 hour in seconds
   private readonly logger = new Logger(AccountLockoutService.name);
 
-  constructor(
-    @Inject('REDIS_CLIENT') private readonly redis: Redis,
-  ) {
+  constructor(@Inject('REDIS_CLIENT') private readonly redis: Redis) {
     this.logger.log('AccountLockoutService initialized');
   }
 
@@ -18,7 +16,7 @@ export class AccountLockoutService {
     try {
       const key = `login_attempts:${username}`;
       const attempts = await this.redis.incr(key);
-      
+
       if (attempts === 1) {
         await this.redis.expire(key, this.ATTEMPT_EXPIRY);
       }
@@ -55,12 +53,12 @@ export class AccountLockoutService {
       this.logger.error(`Error resetting attempts: ${error.message}`);
     }
   }
-  
+
   async clearLockout(username: string): Promise<void> {
     try {
       const lockKey = `account_locked:${username}`;
       const attemptsKey = `login_attempts:${username}`;
-      
+
       // Delete both the lock and the attempts counter
       await this.redis.del(lockKey);
       await this.redis.del(attemptsKey);
@@ -69,7 +67,7 @@ export class AccountLockoutService {
       this.logger.error(`Error clearing lockout: ${error.message}`);
     }
   }
-  
+
   async getAttemptCount(username: string): Promise<number> {
     try {
       const key = `login_attempts:${username}`;

@@ -15,9 +15,9 @@ import { ApiGatewayController } from './api-gateway.controller';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
         secret: config.get('JWT_SECRET'),
-        signOptions: { expiresIn: '1h' }
-      })
-    })
+        signOptions: { expiresIn: '1h' },
+      }),
+    }),
   ],
   controllers: [ApiGatewayController],
   providers: [ApiGatewayService],

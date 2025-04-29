@@ -1,6 +1,13 @@
 // src/tracking/dto/tracking.dto.ts
-import { IsNotEmpty, IsNumber, IsString, IsOptional, Min, Max, IsUUID  } from 'class-validator';
-
+import {
+  IsNotEmpty,
+  IsNumber,
+  IsString,
+  IsOptional,
+  Min,
+  Max,
+  IsUUID,
+} from 'class-validator';
 
 export class JoinDispatchDto {
   @IsUUID()
@@ -71,19 +78,19 @@ export class UpdateLocationDto {
   @IsString()
   @IsOptional()
   registrationNumber?: string;
-  
+
   @IsString()
   @IsOptional()
   plateNumber?: string;
-  
+
   @IsString()
   @IsOptional()
   vehicleColor?: string;
-  
+
   @IsString()
   @IsOptional()
   vehicleMake?: string;
-  
+
   @IsString()
   @IsOptional()
   vehicleDescription?: string;

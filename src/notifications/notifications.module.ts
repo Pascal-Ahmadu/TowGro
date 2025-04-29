@@ -16,11 +16,7 @@ import { AuthModule } from '../auth/auth.module'; // Import AuthModule
     AuthModule, // Add this line to import AuthModule which exports JwtModule
     // Or add JwtModule directly if you prefer
   ],
-  providers: [
-    NotificationsService,
-    MailService,
-    TrackingGateway
-  ],
-  exports: [NotificationsService]
+  providers: [NotificationsService, MailService, TrackingGateway],
+  exports: [NotificationsService],
 })
 export class NotificationsModule {}

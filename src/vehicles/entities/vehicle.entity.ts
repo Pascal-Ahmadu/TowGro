@@ -1,5 +1,13 @@
 // src/vehicles/entities/vehicle.entity.ts
-import { Entity, Column, PrimaryGeneratedColumn, ManyToOne, JoinColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  ManyToOne,
+  JoinColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity('vehicles')
@@ -38,7 +46,11 @@ export class Vehicle {
   @Column({ default: true })
   isActive: boolean;
 
-  @Column({ type: 'enum', enum: ['flatbed', 'tow', 'motorcycle', 'other'], default: 'tow' })
+  @Column({
+    type: 'enum',
+    enum: ['flatbed', 'tow', 'motorcycle', 'other'],
+    default: 'tow',
+  })
   type: string;
 
   @CreateDateColumn()

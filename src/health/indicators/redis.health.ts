@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { HealthIndicator, HealthIndicatorResult, HealthCheckError } from '@nestjs/terminus';
+import {
+  HealthIndicator,
+  HealthIndicatorResult,
+  HealthCheckError,
+} from '@nestjs/terminus';
 import { InjectRedis } from '@nestjs-modules/ioredis';
 import { Redis } from 'ioredis';
 
@@ -14,13 +18,15 @@ export class RedisHealthIndicator extends HealthIndicator {
       // Ping Redis to check if it's responsive
       const result = await this.redis.ping();
       const isHealthy = result === 'PONG';
-      
-      const status = this.getStatus(key, isHealthy, { responseTime: `${Date.now()}ms` });
-      
+
+      const status = this.getStatus(key, isHealthy, {
+        responseTime: `${Date.now()}ms`,
+      });
+
       if (isHealthy) {
         return status;
       }
-      
+
       throw new HealthCheckError('Redis health check failed', status);
     } catch (error) {
       const status = this.getStatus(key, false, { message: error.message });

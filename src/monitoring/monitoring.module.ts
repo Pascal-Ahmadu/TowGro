@@ -15,34 +15,38 @@ import { Counter, Gauge, Histogram, Registry } from 'prom-client';
     MetricsService,
     {
       provide: 'PROM_METRIC_HTTP_REQUESTS_TOTAL',
-      useFactory: () => new Counter({
-        name: 'http_requests_total',
-        help: 'Total number of HTTP requests',
-        labelNames: ['method', 'route', 'statusCode'],
-      }),
+      useFactory: () =>
+        new Counter({
+          name: 'http_requests_total',
+          help: 'Total number of HTTP requests',
+          labelNames: ['method', 'route', 'statusCode'],
+        }),
     },
     {
       provide: 'PROM_METRIC_LOGIN_ATTEMPTS_TOTAL',
-      useFactory: () => new Counter({
-        name: 'login_attempts_total',
-        help: 'Total number of login attempts',
-        labelNames: ['success'],
-      }),
+      useFactory: () =>
+        new Counter({
+          name: 'login_attempts_total',
+          help: 'Total number of login attempts',
+          labelNames: ['success'],
+        }),
     },
     {
       provide: 'PROM_METRIC_ACTIVE_USERS',
-      useFactory: () => new Gauge({
-        name: 'active_users',
-        help: 'Number of currently active users',
-      }),
+      useFactory: () =>
+        new Gauge({
+          name: 'active_users',
+          help: 'Number of currently active users',
+        }),
     },
     {
       provide: 'PROM_METRIC_HTTP_REQUEST_DURATION_SECONDS',
-      useFactory: () => new Histogram({
-        name: 'http_request_duration_seconds',
-        help: 'Duration of HTTP requests in seconds',
-        labelNames: ['method', 'route'],
-      }),
+      useFactory: () =>
+        new Histogram({
+          name: 'http_request_duration_seconds',
+          help: 'Duration of HTTP requests in seconds',
+          labelNames: ['method', 'route'],
+        }),
     },
     {
       provide: Registry,

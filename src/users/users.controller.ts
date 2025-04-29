@@ -1,4 +1,4 @@
-import { 
+import {
   Controller,
   Get,
   Post,
@@ -8,15 +8,15 @@ import {
   Body,
   Param,
   Request,
-  Logger, 
-  Query, 
-  DefaultValuePipe, 
-  ParseIntPipe, 
-  HttpCode, 
+  Logger,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
+  HttpCode,
   HttpStatus,
   UseGuards,
-  UseInterceptors,  // Add this
-  UploadedFile      // Add this
+  UseInterceptors, // Add this
+  UploadedFile, // Add this
 } from '@nestjs/common';
 
 // Update JwtAuthGuard import (line 15)
@@ -31,7 +31,7 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
 @Controller('users')
-@UseGuards(JWTAuthGuard)  // Add guard at controller level
+@UseGuards(JWTAuthGuard) // Add guard at controller level
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
@@ -43,15 +43,15 @@ export class UsersController {
   async findAll(
     @Query('identifier') identifier?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
-    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit = 10
-  ): Promise<User | { users: User[], total: number }> {
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit = 10,
+  ): Promise<User | { users: User[]; total: number }> {
     this.logger.log(`Finding users: page ${page}, limit ${limit}`);
-    
+
     // If identifier is provided, find by email or phone
     if (identifier) {
       return this.usersService.findByEmailOrPhoneNumber(identifier);
     }
-    
+
     // Otherwise, return paginated list of users
     return this.usersService.findAll(page, limit);
   }
@@ -88,24 +88,24 @@ export class UsersController {
   }
 
   // Add these endpoints to your UsersController
-  
+
   @Patch('profile')
   @UseGuards(JWTAuthGuard)
   async updateProfile(
     @Request() req,
-    @Body() updateProfileDto: UpdateProfileDto
+    @Body() updateProfileDto: UpdateProfileDto,
   ) {
     return this.usersService.updateProfile(req.user.id, updateProfileDto);
   }
-  
+
   @Get('profile')
-  @UseGuards(JWTAuthGuard)  // Fixed casing
+  @UseGuards(JWTAuthGuard) // Fixed casing
   async getProfile(@Request() req) {
     return this.usersService.findById(req.user.id);
   }
-  
+
   @Post('profile/avatar')
-  @UseGuards(JWTAuthGuard)  // Fixed casing
+  @UseGuards(JWTAuthGuard) // Fixed casing
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(@Request() req, @UploadedFile() file) {
     return this.usersService.updateAvatar(req.user.id, file);

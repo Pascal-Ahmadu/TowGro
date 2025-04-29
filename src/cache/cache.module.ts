@@ -10,7 +10,7 @@ import { redisStore } from 'cache-manager-redis-yet';
         host: process.env.REDIS_HOST,
         port: parseInt(process.env.REDIS_PORT),
       },
-      ttl: 60 * 1000 // milliseconds
+      ttl: 60 * 1000, // milliseconds
     }),
   ],
   exports: [CacheModule],

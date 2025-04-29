@@ -11,9 +11,12 @@ export class MailService {
     private readonly configService: ConfigService,
   ) {}
 
-  async sendVerificationEmail(email: string, verificationUrl: string): Promise<void> {
+  async sendVerificationEmail(
+    email: string,
+    verificationUrl: string,
+  ): Promise<void> {
     const appName = this.configService.get('APP_NAME', 'Auth Service');
-    
+
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -27,14 +30,17 @@ export class MailService {
       });
       this.logger.log(`Verification email sent to ${email}`);
     } catch (error) {
-      this.logger.error(`Failed to send verification email to ${email}`, error.stack);
+      this.logger.error(
+        `Failed to send verification email to ${email}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
   async sendPasswordResetEmail(email: string, resetUrl: string): Promise<void> {
     const appName = this.configService.get('APP_NAME', 'Auth Service');
-    
+
     try {
       await this.mailerService.sendMail({
         to: email,
@@ -48,25 +54,35 @@ export class MailService {
       });
       this.logger.log(`Password reset email sent to ${email}`);
     } catch (error) {
-      this.logger.error(`Failed to send password reset email to ${email}`, error.stack);
+      this.logger.error(
+        `Failed to send password reset email to ${email}`,
+        error.stack,
+      );
       throw error;
     }
   }
 
-  async sendNotificationEmail(email: string, content: string, type: string): Promise<void> {
-      const appName = this.configService.get('APP_NAME', 'Auth Service');
-      
-      try {
-        await this.mailerService.sendMail({
-          to: email,
-          subject: `${appName} Notification: ${type}`,
-          text: content,
-          html: `<p>${content}</p>`
-        });
-        this.logger.log(`Notification email sent to ${email}`);
-      } catch (error) {
-        this.logger.error(`Failed to send notification email to ${email}`, error.stack);
-        throw error;
-      }
+  async sendNotificationEmail(
+    email: string,
+    content: string,
+    type: string,
+  ): Promise<void> {
+    const appName = this.configService.get('APP_NAME', 'Auth Service');
+
+    try {
+      await this.mailerService.sendMail({
+        to: email,
+        subject: `${appName} Notification: ${type}`,
+        text: content,
+        html: `<p>${content}</p>`,
+      });
+      this.logger.log(`Notification email sent to ${email}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send notification email to ${email}`,
+        error.stack,
+      );
+      throw error;
+    }
   }
 }

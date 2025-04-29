@@ -1,4 +1,14 @@
-import { Controller, Get, Post, Body, Param, Query, UseGuards, Delete, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Query,
+  UseGuards,
+  Delete,
+  Patch,
+} from '@nestjs/common';
 import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -52,7 +62,7 @@ export class AdminController {
   async getUserMetrics() {
     // Use the getUserStatistics method that already exists in UsersService
     const stats = await this.usersService.getUserStatistics();
-    
+
     return {
       totalUsers: stats.totalUsers,
       activeUsers: stats.activeToday,
@@ -75,7 +85,8 @@ export class AdminController {
     // Use methods that exist in MetricsService or provide default values
     return {
       httpRequests: this.metricsService.getMetric('http_requests') || 0,
-      averageResponseTime: this.metricsService.getMetric('response_time_avg') || 0,
+      averageResponseTime:
+        this.metricsService.getMetric('response_time_avg') || 0,
       errorRate: this.metricsService.getMetric('error_rate') || 0,
     };
   }

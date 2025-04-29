@@ -1,8 +1,8 @@
 import { Controller, Get } from '@nestjs/common';
-import { 
-  HealthCheck, 
-  HealthCheckService, 
-  TypeOrmHealthIndicator, 
+import {
+  HealthCheck,
+  HealthCheckService,
+  TypeOrmHealthIndicator,
   MemoryHealthIndicator,
   DiskHealthIndicator,
 } from '@nestjs/terminus';
@@ -26,13 +26,15 @@ export class HealthController {
   check() {
     return this.health.check([
       // Database health check
-      () => this.db.pingCheck('database', { connection: this.defaultConnection }),
-      
+      () =>
+        this.db.pingCheck('database', { connection: this.defaultConnection }),
+
       // Memory usage check - heap must not exceed 300MB
       () => this.memory.checkHeap('memory_heap', 300 * 1024 * 1024),
-      
+
       // Disk storage check - at least 500MB free
-      () => this.disk.checkStorage('disk', { path: '/', thresholdPercent: 0.9 }),
+      () =>
+        this.disk.checkStorage('disk', { path: '/', thresholdPercent: 0.9 }),
     ]);
   }
 }

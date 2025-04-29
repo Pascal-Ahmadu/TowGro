@@ -1,4 +1,11 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
+import {
+  Entity,
+  Column,
+  PrimaryGeneratedColumn,
+  CreateDateColumn,
+  UpdateDateColumn,
+  Index,
+} from 'typeorm';
 import { Exclude } from 'class-transformer';
 
 // First define the enum outside the class
@@ -6,7 +13,7 @@ export enum UserRole {
   ADMIN = 'admin',
   MODERATOR = 'moderator',
   USER = 'user',
-  SUPPORT = 'support'
+  SUPPORT = 'support',
 }
 
 @Entity()
@@ -21,8 +28,8 @@ export class User {
     length: 255,
     transformer: {
       to: (value) => value?.toLowerCase(),
-      from: (value) => value
-    }
+      from: (value) => value,
+    },
   })
   email: string;
 
@@ -74,7 +81,7 @@ export class User {
   twoFactorEnabled: boolean;
 
   @Column({ nullable: true })
-  avatarUrl?: string;  // Add this property
+  avatarUrl?: string; // Add this property
 
   @Column({ type: 'json', nullable: true })
   preferences?: {

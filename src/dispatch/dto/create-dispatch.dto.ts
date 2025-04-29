@@ -1,4 +1,11 @@
-import { IsNotEmpty, IsUUID, IsNumber, IsLatitude, IsLongitude, IsEnum } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsUUID,
+  IsNumber,
+  IsLatitude,
+  IsLongitude,
+  IsEnum,
+} from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 /**
@@ -7,7 +14,7 @@ import { ApiProperty } from '@nestjs/swagger';
 export class CreateDispatchDto {
   @ApiProperty({
     description: 'UUID of the user requesting the dispatch',
-    example: '123e4567-e89b-12d3-a456-426614174000'
+    example: '123e4567-e89b-12d3-a456-426614174000',
   })
   @IsUUID()
   @IsNotEmpty()
@@ -15,7 +22,7 @@ export class CreateDispatchDto {
 
   @ApiProperty({
     description: 'Latitude coordinate for pickup location',
-    example: 40.7128
+    example: 40.7128,
   })
   @IsNumber()
   @IsLatitude()
@@ -24,7 +31,7 @@ export class CreateDispatchDto {
 
   @ApiProperty({
     description: 'Longitude coordinate for pickup location',
-    example: -74.0060
+    example: -74.006,
   })
   @IsNumber()
   @IsLongitude()
@@ -34,9 +41,11 @@ export class CreateDispatchDto {
   @ApiProperty({
     description: 'Type of vehicle requested for the dispatch',
     enum: ['flatbed', 'tow'],
-    example: 'flatbed'
+    example: 'flatbed',
   })
-  @IsEnum(['flatbed', 'tow'], { message: 'Vehicle type must be either flatbed or tow' })
+  @IsEnum(['flatbed', 'tow'], {
+    message: 'Vehicle type must be either flatbed or tow',
+  })
   @IsNotEmpty()
   readonly vehicleType: 'flatbed' | 'tow';
 }

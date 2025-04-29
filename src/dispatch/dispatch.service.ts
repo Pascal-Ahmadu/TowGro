@@ -1,4 +1,10 @@
-import { Injectable, BadRequestException, NotFoundException, Logger, InternalServerErrorException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  Logger,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Dispatch } from './entities/dispatch.entity';
@@ -21,7 +27,7 @@ export enum DispatchStatus {
   CANCELLED = 'cancelled',
   PAYMENT_PENDING = 'payment_pending',
   PAYMENT_COMPLETED = 'payment_completed',
-  FAILED = 'failed'
+  FAILED = 'failed',
 }
 
 /**
@@ -35,7 +41,7 @@ export class DispatchService {
     @InjectRepository(Dispatch)
     private readonly dispatchRepository: Repository<Dispatch>,
     private readonly notificationService: NotificationsService,
-    private readonly paymentService: PaymentService
+    private readonly paymentService: PaymentService,
   ) {}
 
   /**
@@ -43,7 +49,9 @@ export class DispatchService {
    * @param createDispatchDto - The dispatch creation data
    * @returns The created dispatch entity
    */
-  async createDispatch(createDispatchDto: CreateDispatchDto): Promise<Dispatch> {
+  async createDispatch(
+    createDispatchDto: CreateDispatchDto,
+  ): Promise<Dispatch> {
     try {
       const dispatch = this.dispatchRepository.create({
         userId: createDispatchDto.userId,
@@ -52,12 +60,15 @@ export class DispatchService {
         status: DispatchStatus.PENDING,
         // Store vehicleType if added to Dispatch entity
       });
-      
+
       const savedDispatch = await this.dispatchRepository.save(dispatch);
       this.logger.log(`Created dispatch with ID: ${savedDispatch.id}`);
       return savedDispatch;
     } catch (error) {
-      this.logger.error(`Failed to create dispatch: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to create dispatch: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Failed to create dispatch request');
     }
   }
@@ -70,25 +81,28 @@ export class DispatchService {
    */
   async getDispatchStatus(id: string): Promise<DispatchStatusDto> {
     try {
-      const dispatch = await this.dispatchRepository.findOne({ 
+      const dispatch = await this.dispatchRepository.findOne({
         where: { id },
-        select: ['id', 'status'] // Optimize query to only select needed fields
+        select: ['id', 'status'], // Optimize query to only select needed fields
       });
-      
+
       if (!dispatch) {
         this.logger.warn(`Dispatch with ID ${id} not found`);
         throw new NotFoundException(`Dispatch with ID ${id} not found`);
       }
-      
-      return { 
-        dispatchId: dispatch.id, 
-        status: dispatch.status
+
+      return {
+        dispatchId: dispatch.id,
+        status: dispatch.status,
       };
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
-      this.logger.error(`Error retrieving dispatch status: ${error.message}`, error.stack);
+      this.logger.error(
+        `Error retrieving dispatch status: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Failed to retrieve dispatch status');
     }
   }
@@ -101,27 +115,38 @@ export class DispatchService {
    */
   async updateDispatchStatus(statusDto: DispatchStatusDto): Promise<Dispatch> {
     const { dispatchId, status } = statusDto;
-    
-    const dispatch = await this.dispatchRepository.findOne({ where: { id: dispatchId } });
+
+    const dispatch = await this.dispatchRepository.findOne({
+      where: { id: dispatchId },
+    });
     if (!dispatch) {
-      this.logger.warn(`Dispatch with ID ${dispatchId} not found for status update`);
+      this.logger.warn(
+        `Dispatch with ID ${dispatchId} not found for status update`,
+      );
       throw new NotFoundException(`Dispatch with ID ${dispatchId} not found`);
     }
-    
+
     dispatch.status = status;
-    
+
     try {
       const updatedDispatch = await this.dispatchRepository.save(dispatch);
       this.logger.log(`Updated dispatch ${dispatchId} status to ${status}`);
-      
+
       // Trigger notifications if status changes to certain values
-      if (['assigned', 'in_progress', 'completed', 'payment_pending'].includes(status)) {
+      if (
+        ['assigned', 'in_progress', 'completed', 'payment_pending'].includes(
+          status,
+        )
+      ) {
         await this.notificationService.sendStatusUpdate(updatedDispatch);
       }
-      
+
       return updatedDispatch;
     } catch (error) {
-      this.logger.error(`Failed to update dispatch status: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to update dispatch status: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Failed to update dispatch status');
     }
   }
@@ -137,15 +162,15 @@ export class DispatchService {
     // 1. Calculate distance between pickup and dropoff
     // 2. Factor in time of day, vehicle type, etc.
     // 3. Apply any applicable discounts
-    
+
     const baseFee = 1000; // ₦10 in kobo
     const distanceFee = this.calculateDistanceFee(dispatch);
     const timeFee = this.calculateTimeFee(dispatch);
     const vehicleFee = this.calculateVehicleFee(dispatch);
-    
+
     return baseFee + distanceFee + timeFee + vehicleFee;
   }
-  
+
   /**
    * Calculate the distance-based fee component
    */
@@ -153,7 +178,7 @@ export class DispatchService {
     // Implement distance fee calculation
     return 0; // Placeholder
   }
-  
+
   /**
    * Calculate the time-based fee component
    */
@@ -161,7 +186,7 @@ export class DispatchService {
     // Implement time fee calculation
     return 0; // Placeholder
   }
-  
+
   /**
    * Calculate the vehicle-based fee component
    */
@@ -177,82 +202,104 @@ export class DispatchService {
    */
   async completeDispatch(id: string): Promise<Dispatch> {
     this.logger.log(`Completing dispatch with ID: ${id}`);
-    
+
     // Use transaction to ensure data consistency
-    return this.dispatchRepository.manager.transaction(async (transactionalEntityManager) => {
-      // Find dispatch with relations needed for payment processing
-      const dispatch = await transactionalEntityManager.findOne(Dispatch, {
-        where: { id },
-        relations: ['user'] // Assuming user relation exists
-      });
-      
-      if (!dispatch) {
-        this.logger.warn(`Dispatch with ID ${id} not found for completion`);
-        throw new NotFoundException(`Dispatch with ID ${id} not found`);
-      }
-      
-      // Validate dispatch can be completed
-      if (dispatch.status !== DispatchStatus.IN_PROGRESS) {
-        this.logger.warn(`Cannot complete dispatch with status ${dispatch.status}`);
-        throw new BadRequestException(`Only dispatches with status 'in_progress' can be completed`);
-      }
-      
-      try {
-        // Update status to payment_pending before initiating payment
-        dispatch.status = DispatchStatus.PAYMENT_PENDING;
-        await transactionalEntityManager.save(dispatch);
-        
-        // Create payment payload with proper currency and amount
-        const amount = this.calculateFee(dispatch);
-        const customerEmail = dispatch.user?.email || 'customer@example.com'; // Fallback for testing
-        
-        const paymentDto: CreatePaymentDto = {
-          reference: `DSP_${dispatch.id}`,
-          customerEmail,
-          amount,
-          currency: 'NGN',
-          metadata: {
-            dispatchId: dispatch.id,
-            userId: dispatch.userId,
-            completedAt: new Date().toISOString()
+    return this.dispatchRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // Find dispatch with relations needed for payment processing
+        const dispatch = await transactionalEntityManager.findOne(Dispatch, {
+          where: { id },
+          relations: ['user'], // Assuming user relation exists
+        });
+
+        if (!dispatch) {
+          this.logger.warn(`Dispatch with ID ${id} not found for completion`);
+          throw new NotFoundException(`Dispatch with ID ${id} not found`);
+        }
+
+        // Validate dispatch can be completed
+        if (dispatch.status !== DispatchStatus.IN_PROGRESS) {
+          this.logger.warn(
+            `Cannot complete dispatch with status ${dispatch.status}`,
+          );
+          throw new BadRequestException(
+            `Only dispatches with status 'in_progress' can be completed`,
+          );
+        }
+
+        try {
+          // Update status to payment_pending before initiating payment
+          dispatch.status = DispatchStatus.PAYMENT_PENDING;
+          await transactionalEntityManager.save(dispatch);
+
+          // Create payment payload with proper currency and amount
+          const amount = this.calculateFee(dispatch);
+          const customerEmail = dispatch.user?.email || 'customer@example.com'; // Fallback for testing
+
+          const paymentDto: CreatePaymentDto = {
+            reference: `DSP_${dispatch.id}`,
+            customerEmail,
+            amount,
+            currency: 'NGN',
+            metadata: {
+              dispatchId: dispatch.id,
+              userId: dispatch.userId,
+              completedAt: new Date().toISOString(),
+            },
+          };
+
+          // Initialize payment with Paystack
+          const paymentResult =
+            await this.paymentService.initializePayment(paymentDto);
+
+          if (!paymentResult.success) {
+            throw new Error(
+              paymentResult.error || 'Payment initialization failed',
+            );
           }
-        };
-        
-        // Initialize payment with Paystack
-        const paymentResult = await this.paymentService.initializePayment(paymentDto);
-        
-        if (!paymentResult.success) {
-          throw new Error(paymentResult.error || 'Payment initialization failed');
+
+          // Store payment information in dispatch
+          dispatch.paymentReference = paymentResult.data.reference;
+          dispatch.paymentUrl = paymentResult.data.authorizationUrl;
+          dispatch.paymentAmount = amount;
+          dispatch.paymentInitiatedAt = new Date();
+
+          // Save the updated dispatch
+          const updatedDispatch =
+            await transactionalEntityManager.save(dispatch);
+
+          // Send notification about payment requirement
+          await this.notificationService.sendPaymentNotification(
+            updatedDispatch,
+          );
+
+          this.logger.log(
+            `Successfully completed dispatch ${id} and initiated payment`,
+          );
+          return updatedDispatch;
+        } catch (error) {
+          this.logger.error(
+            `Failed to complete dispatch: ${error.message}`,
+            error.stack,
+          );
+
+          // Revert to previous status if payment fails
+          dispatch.status = DispatchStatus.IN_PROGRESS;
+          await transactionalEntityManager.save(dispatch);
+
+          if (
+            error instanceof BadRequestException ||
+            error instanceof NotFoundException
+          ) {
+            throw error;
+          }
+
+          throw new InternalServerErrorException(
+            'Failed to complete dispatch and initialize payment',
+          );
         }
-        
-        // Store payment information in dispatch
-        dispatch.paymentReference = paymentResult.data.reference;
-        dispatch.paymentUrl = paymentResult.data.authorizationUrl;
-        dispatch.paymentAmount = amount;
-        dispatch.paymentInitiatedAt = new Date();
-        
-        // Save the updated dispatch
-        const updatedDispatch = await transactionalEntityManager.save(dispatch);
-        
-        // Send notification about payment requirement
-        await this.notificationService.sendPaymentNotification(updatedDispatch);
-        
-        this.logger.log(`Successfully completed dispatch ${id} and initiated payment`);
-        return updatedDispatch;
-      } catch (error) {
-        this.logger.error(`Failed to complete dispatch: ${error.message}`, error.stack);
-        
-        // Revert to previous status if payment fails
-        dispatch.status = DispatchStatus.IN_PROGRESS;
-        await transactionalEntityManager.save(dispatch);
-        
-        if (error instanceof BadRequestException || error instanceof NotFoundException) {
-          throw error;
-        }
-        
-        throw new InternalServerErrorException('Failed to complete dispatch and initialize payment');
-      }
-    });
+      },
+    );
   }
 
   /**
@@ -261,53 +308,62 @@ export class DispatchService {
    * @returns Updated dispatch with payment status
    */
   async verifyDispatchPayment(dispatchId: string): Promise<Dispatch> {
-    const dispatch = await this.dispatchRepository.findOne({ where: { id: dispatchId } });
-    
+    const dispatch = await this.dispatchRepository.findOne({
+      where: { id: dispatchId },
+    });
+
     if (!dispatch) {
       throw new NotFoundException(`Dispatch with ID ${dispatchId} not found`);
     }
-    
+
     if (!dispatch.paymentReference) {
-      throw new BadRequestException('No payment has been initiated for this dispatch');
+      throw new BadRequestException(
+        'No payment has been initiated for this dispatch',
+      );
     }
-    
+
     try {
-      const verificationResult = await this.paymentService.verifyPayment({ 
-        reference: dispatch.paymentReference 
+      const verificationResult = await this.paymentService.verifyPayment({
+        reference: dispatch.paymentReference,
       });
-      
-      if (verificationResult.success && 
-          verificationResult.data.status === 'success') {
-        
+
+      if (
+        verificationResult.success &&
+        verificationResult.data.status === 'success'
+      ) {
         // Update dispatch status to payment completed
         dispatch.status = DispatchStatus.PAYMENT_COMPLETED;
         dispatch.paymentVerifiedAt = new Date();
-        
+
         const updatedDispatch = await this.dispatchRepository.save(dispatch);
-        
+
         // Send payment confirmation notification
         await this.notificationService.sendPaymentConfirmation(updatedDispatch);
-        
+
         return updatedDispatch;
       } else {
         // Payment not successful yet
         return dispatch;
       }
     } catch (error) {
-      this.logger.error(`Failed to verify payment: ${error.message}`, error.stack);
+      this.logger.error(
+        `Failed to verify payment: ${error.message}`,
+        error.stack,
+      );
       throw new BadRequestException('Payment verification failed');
     }
   }
 
   // Add to DispatchService class
   async getDispatchStatistics() {
-    const query = this.dispatchRepository.createQueryBuilder('dispatch')
+    const query = this.dispatchRepository
+      .createQueryBuilder('dispatch')
       .select('status, COUNT(*) as count')
       .groupBy('status');
-    
+
     return {
       statusCounts: await query.getRawMany(),
-      total: await this.dispatchRepository.count()
+      total: await this.dispatchRepository.count(),
     };
   }
 
@@ -315,8 +371,8 @@ export class DispatchService {
     return this.dispatchRepository.find({
       relations: ['user'],
       order: {
-        createdAt: 'DESC'
-      } as import('typeorm').FindOptionsOrder<Dispatch>
+        createdAt: 'DESC',
+      } as import('typeorm').FindOptionsOrder<Dispatch>,
     });
   }
-}  // Add this closing brace to complete the class definition
+} // Add this closing brace to complete the class definition

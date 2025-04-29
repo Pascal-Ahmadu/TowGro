@@ -51,13 +51,13 @@ import { RedisHealth } from './health/redis-health';
         ssl: true,
         extra: {
           ssl: {
-            rejectUnauthorized: false
-          }
+            rejectUnauthorized: false,
+          },
         },
         // Add migration configuration
         migrations: [__dirname + '/migrations/**/*.{js,ts}'],
         migrationsRun: false, // Don't run migrations automatically on startup
-        migrationsTableName: 'migrations'
+        migrationsTableName: 'migrations',
       }),
     }),
 
@@ -84,9 +84,9 @@ import { RedisHealth } from './health/redis-health';
           secure: false, // No SSL for testing
           auth: {
             user: configService.get('MAIL_USER'),
-            pass: configService.get('MAIL_PASSWORD')
-          }
-        }
+            pass: configService.get('MAIL_PASSWORD'),
+          },
+        },
       }),
       inject: [ConfigService],
     }),
@@ -106,40 +106,41 @@ import { RedisHealth } from './health/redis-health';
           socket: {
             host,
             port,
-            tls: host !== 'localhost' ? { rejectUnauthorized: false } : undefined,
+            tls:
+              host !== 'localhost' ? { rejectUnauthorized: false } : undefined,
           },
           password: password || undefined,
           ttl: 60, // seconds
           // Add error handling
           onError: (error) => {
             console.error('Redis cache error:', error);
-          }
+          },
         };
       },
     }),
-    
+
     // 7. Payment Module - ensure proper initialization
     forwardRef(() => PaymentModule),
     forwardRef(() => AuthModule),
     forwardRef(() => UsersModule),
-    
+
     // 8. Feature modules
     NotificationsModule,
     DispatchModule,
     TrackingModule,
     ApiGatewayModule, // Add the API Gateway module here
     MonitoringModule,
-    
+
     // Add rate limiting
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
-      useFactory: (config: ConfigService) => ([
+      useFactory: (config: ConfigService) => [
         {
           ttl: config.get('THROTTLE_TTL', 60),
           limit: config.get('THROTTLE_LIMIT', 10),
         },
-      ]),
+      ],
     }),
     // Move WinstonModule inside the imports array
     WinstonModule.forRootAsync({
@@ -147,27 +148,27 @@ import { RedisHealth } from './health/redis-health';
         level: config.get('LOG_LEVEL') || 'info',
         format: format.combine(
           format.timestamp(),
-          config.get('NODE_ENV') === 'production' 
+          config.get('NODE_ENV') === 'production'
             ? format.json()
-            : format.prettyPrint()
+            : format.prettyPrint(),
         ),
         transports: [
           new transports.Console(),
-          new transports.File({ 
+          new transports.File({
             filename: 'logs/combined.log',
             maxsize: 5242880,
-            maxFiles: 5
+            maxFiles: 5,
           }),
           new transports.File({
             filename: 'logs/error.log',
             level: 'error',
-            handleExceptions: true
-          })
-        ]
+            handleExceptions: true,
+          }),
+        ],
       }),
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
-    
+
     TerminusModule.forRoot(),
   ],
   controllers: [HealthController],
@@ -189,17 +190,18 @@ import { RedisHealth } from './health/redis-health';
     // Redis client provider
     {
       provide: 'REDIS_CLIENT',
-      useFactory: (config: ConfigService) => new Redis({
-        host: config.get('REDIS_HOST'),
-        port: config.get('REDIS_PORT'),
-      }),
+      useFactory: (config: ConfigService) =>
+        new Redis({
+          host: config.get('REDIS_HOST'),
+          port: config.get('REDIS_PORT'),
+        }),
       inject: [ConfigService],
     },
     // Redis health check provider
     {
       provide: RedisHealth,
       useClass: RedisHealth,
-    }
+    },
   ],
 })
 export class AppModule {}

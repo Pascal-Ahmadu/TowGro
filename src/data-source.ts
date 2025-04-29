@@ -30,7 +30,7 @@ const AppDataSource = new DataSource({
     Vehicle,
     PaymentMethod,
     Notification,
-    AuditLogEntity
+    AuditLogEntity,
   ],
   migrations: ['dist/migrations/*.js'],
   synchronize: false,

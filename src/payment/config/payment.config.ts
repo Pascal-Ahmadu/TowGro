@@ -11,6 +11,6 @@ export interface PaymentConfig {
 export const defaultPaymentConfig: PaymentConfig = {
   isGlobal: false,
   paystack: {
-    secretKey: process.env.PAYSTACK_SECRET_KEY
-  }
+    secretKey: process.env.PAYSTACK_SECRET_KEY,
+  },
 };

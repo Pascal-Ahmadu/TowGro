@@ -5,8 +5,8 @@ import { Redis } from 'ioredis';
 @Injectable()
 export class RedisHealth extends HealthIndicator {
   constructor(
-    @Inject('REDIS_CLIENT') 
-    private readonly redis: Redis
+    @Inject('REDIS_CLIENT')
+    private readonly redis: Redis,
   ) {
     super();
   }

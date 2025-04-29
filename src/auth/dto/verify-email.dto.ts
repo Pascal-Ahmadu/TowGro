@@ -1,3 +1,3 @@
 export class VerifyEmailDto {
-    token: string;
+  token: string;
 }

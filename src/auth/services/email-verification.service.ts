@@ -16,7 +16,10 @@ export class EmailVerificationService {
     private readonly mailService: MailService,
     @InjectRedis() private readonly redis: Redis,
   ) {
-    this.tokenExpiration = this.configService.get('EMAIL_VERIFICATION_EXPIRATION', 86400); // 24 hours default
+    this.tokenExpiration = this.configService.get(
+      'EMAIL_VERIFICATION_EXPIRATION',
+      86400,
+    ); // 24 hours default
   }
 
   async sendVerificationEmail(userId: string) {
@@ -30,13 +33,13 @@ export class EmailVerificationService {
     }
 
     const token = uuidv4();
-    
+
     // Store token in Redis with expiration
     await this.redis.set(
       `email_verification:${token}`,
       userId,
       'EX',
-      this.tokenExpiration
+      this.tokenExpiration,
     );
 
     // Send verification email
@@ -54,7 +57,7 @@ export class EmailVerificationService {
 
     // Mark email as verified
     await this.usersService.markEmailAsVerified(userId);
-    
+
     // Delete the token to prevent reuse
     await this.redis.del(`email_verification:${token}`);
 

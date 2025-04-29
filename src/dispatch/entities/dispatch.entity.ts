@@ -1,5 +1,11 @@
 // entities/dispatch.entity.ts
-import { Column, Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { User } from '../../users/entities/user.entity';
 
 @Entity()
@@ -18,8 +24,18 @@ export class Dispatch {
 
   @Column({
     type: 'enum',
-    enum: ['pending', 'assigned', 'en_route', 'in_progress', 'completed', 'cancelled', 'payment_pending', 'payment_completed', 'failed'],
-    default: 'pending'
+    enum: [
+      'pending',
+      'assigned',
+      'en_route',
+      'in_progress',
+      'completed',
+      'cancelled',
+      'payment_pending',
+      'payment_completed',
+      'failed',
+    ],
+    default: 'pending',
   })
   status: string;
 

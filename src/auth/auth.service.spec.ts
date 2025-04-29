@@ -13,20 +13,20 @@ describe('AuthService', () => {
     mockUsersService = {
       findByEmailOrPhoneNumber: jest.fn().mockResolvedValue({
         id: faker.string.uuid(),
-        password: 'valid-password'
-      })
+        password: 'valid-password',
+      }),
     };
 
     mockLockoutService = {
       isAccountLocked: jest.fn().mockResolvedValue(false),
-      resetAttempts: jest.fn()
+      resetAttempts: jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         AuthService,
         { provide: UsersService, useValue: mockUsersService },
-        { provide: AccountLockoutService, useValue: mockLockoutService }
+        { provide: AccountLockoutService, useValue: mockLockoutService },
       ],
     }).compile();
 
@@ -34,14 +34,20 @@ describe('AuthService', () => {
   });
 
   it('validates user with correct credentials', async () => {
-    const user = await service.validateUser('test@example.com', 'valid-password');
+    const user = await service.validateUser(
+      'test@example.com',
+      'valid-password',
+    );
     expect(user).toBeDefined();
     expect(mockLockoutService.resetAttempts).toHaveBeenCalled();
   });
 
   it('rejects invalid credentials', async () => {
-    mockUsersService.findByEmailOrPhoneNumber = jest.fn().mockResolvedValue(null);
-    await expect(service.validateUser('invalid@test.com', 'wrong-pass'))
-      .rejects.toThrow('Invalid credentials');
+    mockUsersService.findByEmailOrPhoneNumber = jest
+      .fn()
+      .mockResolvedValue(null);
+    await expect(
+      service.validateUser('invalid@test.com', 'wrong-pass'),
+    ).rejects.toThrow('Invalid credentials');
   });
 });
