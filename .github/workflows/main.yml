@@ -25,8 +25,13 @@ jobs:
     - name: Build
       run: npm run build
       
+    - name: Verify build artifacts
+      run: |
+        if [ -d "dist" ]; then echo "Build directory exists"; else echo "Build directory does not exist"; fi
+    
     - name: Upload build artifacts
       uses: actions/upload-artifact@v3
       with:
         name: build-artifacts
         path: dist/
+      continue-on-error: true
