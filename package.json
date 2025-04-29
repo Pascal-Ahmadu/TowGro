@@ -101,6 +101,7 @@
     "@types/node": "^20.17.32",
     "@types/paystack": "^2.0.4",
     "eslint": "^8.46.0",
+    "eslint-plugin-prettier": "^5.2.6",
     "jest": "^29.6.1",
     "prettier": "^3.0.0",
     "supertest": "^7.1.0",
