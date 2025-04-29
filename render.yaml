@@ -1,49 +1,40 @@
-databases:
-  - name: towgrow-db
-    databaseName: neondb
-    user: neon_user
-    region: us-east-2
-    postgresVersion: 17
-
-  - name: towgrow-redis
-    type: redis
-    plan: free
-    ipAllowList: []
-
 services:
   - type: web
     name: towgrow-auth
+    env: node
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start:prod
     envVars:
-      # PostgreSQL connection
+      # PostgreSQL connection (Neon)
       - key: DB_HOST
-        fromDatabase:
-          name: towgrow-db
-          property: host
+        value: ep-cool-heart-a46vowsa-pooler.us-east-1.aws.neon.tech
       - key: DB_PORT
         value: 5432
       - key: DB_USER
-        fromDatabase:
-          name: towgrow-db
-          property: user
+        value: neondb_owner
       - key: DB_PASS
-        fromDatabase:
-          name: towgrow-db
-          property: password
+        value: npg_1O5EbCwyePXM
       - key: DB_NAME
-        fromDatabase:
-          name: towgrow-db
-          property: database
+        value: neondb
         
-      # Redis connection
+      # Redis connection (Render)
       - key: REDIS_HOST
         fromService:
           name: towgrow-redis
           type: redis
           property: host
       - key: REDIS_PORT
-        value: 6379
+        fromService:
+          name: towgrow-redis
+          type: redis
+          property: port
       - key: REDIS_PASSWORD
         fromService:
           name: towgrow-redis
           type: redis
           property: password
+
+  - type: redis
+    name: towgrow-redis
+    ipAllowList: []
+    plan: free
