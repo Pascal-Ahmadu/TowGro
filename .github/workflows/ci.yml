@@ -28,13 +28,13 @@ jobs:
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
           POSTGRES_DB: testdb
-        ports: [ "5432:5432" ]
+        ports:
+          - 5432:5432
         options: >-
-          --health-cmd pg_isready
+          --health-cmd "pg_isready"
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
-          # Add sysctl settings to avoid memory issues
           --sysctl net.ipv4.tcp_keepalive_time=600
           --sysctl net.ipv4.tcp_keepalive_intvl=60
 
