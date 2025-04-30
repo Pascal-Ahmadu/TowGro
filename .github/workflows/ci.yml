@@ -58,15 +58,15 @@ jobs:
         cache: 'npm'
         cache-dependency-path: 'package-lock.json'
 
-    # Add a step to install eslint-config-prettier which was missing
+    # Modified: Install eslint-config-prettier with force flag
     - name: Ensure ESLint dependencies
-      run: npm install eslint-config-prettier --no-save
+      run: npm install eslint-config-prettier --force --no-save
 
-    # Use a more robust installation approach with multiple fallbacks
+    # Modified: Installation approach to handle NestJS version conflicts
     - name: Install dependencies
       run: |
-        echo "Attempting to install dependencies with npm ci..."
-        npm ci --legacy-peer-deps || npm install --legacy-peer-deps --no-audit
+        echo "Attempting to install dependencies with npm ci and force flag..."
+        npm ci --force || npm install --force --no-audit
       env:
         NODE_OPTIONS: --openssl-legacy-provider
       
@@ -75,7 +75,14 @@ jobs:
       run: |
         if [ ! -d "node_modules" ]; then
           echo "node_modules directory not found. Trying alternative installation."
-          npm install --no-audit --legacy-peer-deps --force
+          npm install --no-audit --force
+          
+          # If still failing, try downgrading @nestjs/websockets to match core version
+          if [ ! -d "node_modules" ]; then
+            echo "Attempting to fix NestJS version conflict..."
+            npm install @nestjs/websockets@10.4.17 --force
+            npm install --force
+          fi
         fi
 
     - name: Copy environment file
