@@ -26,7 +26,6 @@ export class User {
     unique: true,
     nullable: true,
     length: 255,
-    type: 'varchar',  // Add explicit type here
     transformer: {
       to: (value) => value?.toLowerCase(),
       from: (value) => value,
@@ -34,14 +33,9 @@ export class User {
   })
   email: string;
 
-  // Remove the duplicate @Column decorator below
   @Index()
-  @Column({ 
-    type: 'varchar', 
-    length: 20, 
-    nullable: true 
-  })
-  phoneNumber?: string;
+  @Column({ nullable: true })
+  phoneNumber: string;
 
   @Exclude()
   @Column()
