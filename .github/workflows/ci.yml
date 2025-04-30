@@ -44,8 +44,11 @@ jobs:
         options: >-
           --health-cmd "redis-cli ping"
           --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
+          --health-timeout 30s  # Increased timeout
+          --health-retries 10   # Increased retries
+          --sysctl vm.overcommit_memory=1
+        env:
+          REDIS_ARGS: "--bind 0.0.0.0 --requirepass testpass"  # Explicit binding and auth
 
     steps:
     - name: Checkout code
@@ -84,6 +87,12 @@ jobs:
             npm install --force
           fi
         fi
+
+    - name: Check Redis connectivity
+      run: |
+        echo "Waiting for Redis..."
+        timeout 60 bash -c 'until redis-cli -h localhost -p 6379 -a testpass ping; do sleep 2; done'
+        echo "Redis connection established"
 
     - name: Copy environment file
       run: |
