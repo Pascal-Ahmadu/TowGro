@@ -1,7 +1,7 @@
 import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
-
+import 'reflect-metadata';  // Add this as FIRST import
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';

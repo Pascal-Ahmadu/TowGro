@@ -12,15 +12,11 @@ export class LocationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column()
   @Index()
+  @Column({ type: 'varchar', length: 255 })
   vehicleId: string;
 
-  @Column()
-  @Index()
-  dispatchId: string;
-
-  @Column('decimal', { precision: 10, scale: 7 })
+  @Column({ type: 'float' })
   latitude: number;
 
   @Column('decimal', { precision: 10, scale: 7 })
@@ -35,20 +31,20 @@ export class LocationEntity {
   @Column('decimal', { precision: 10, scale: 5, default: 0 })
   distanceTraveled: number;
 
-  // Add vehicle identification fields
-  @Column({ nullable: true })
+  // Add vehicle identification fields with explicit types
+  @Column({ type: 'varchar', length: 255, nullable: true })
   registrationNumber?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   plateNumber?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 100, nullable: true })
   vehicleColor?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 255, nullable: true })
   vehicleMake?: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 500, nullable: true })
   vehicleDescription?: string;
 
   @Column('timestamp')
