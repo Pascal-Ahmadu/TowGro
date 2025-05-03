@@ -121,17 +121,42 @@ export class TrackingGateway
     }
   }
 
+  // Update the setupRedisAdapter method
   private async setupRedisAdapter(server: Server) {
-    const pubClient = redis.createClient({
-      url: `redis://${this.configService.get('REDIS_HOST')}:${this.configService.get('REDIS_PORT')}`,
-    });
-
-    const subClient = pubClient.duplicate();
-
-    await Promise.all([pubClient.connect(), subClient.connect()]);
-
-    server.adapter(createAdapter(pubClient, subClient));
-    this.logger.log('Redis adapter configured for WebSocket gateway');
+    try {
+      // First check if REDIS_URL is available
+      const redisUrl = this.configService.get<string>('REDIS_URL');
+      
+      let pubClient;
+      if (redisUrl) {
+        this.logger.log('Using REDIS_URL for WebSocket adapter');
+        pubClient = redis.createClient({ url: redisUrl });
+      } else {
+        const host = this.configService.get('REDIS_HOST', 'localhost');
+        const port = this.configService.get('REDIS_PORT', 6379);
+        const password = this.configService.get('REDIS_PASSWORD', '');
+        
+        const options = {
+          url: `redis://${host}:${port}`,
+        };
+        
+        if (password) {
+          options.url = `redis://:${password}@${host}:${port}`;
+        }
+        
+        this.logger.log(`Using Redis connection params: ${host}:${port}`);
+        pubClient = redis.createClient(options);
+      }
+  
+      const subClient = pubClient.duplicate();
+  
+      await Promise.all([pubClient.connect(), subClient.connect()]);
+  
+      server.adapter(createAdapter(pubClient, subClient));
+      this.logger.log('Redis adapter configured for WebSocket gateway');
+    } catch (error) {
+      this.logger.error(`Failed to setup Redis adapter: ${error.message}`);
+    }
   }
 
   @UseGuards(WsJwtAuthGuard, WsThrottlerGuard)

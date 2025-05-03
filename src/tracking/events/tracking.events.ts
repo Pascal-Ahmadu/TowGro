@@ -48,10 +48,35 @@ export class TrackingEvents implements OnModuleInit, OnModuleDestroy {
 
   private async setupRedisClients() {
     try {
-      const redisUrl = `redis://:${this.configService.get('REDIS_PASSWORD')}@${this.configService.get('REDIS_HOST')}:${this.configService.get('REDIS_PORT')}`;
-
-      this.publisher = createClient({ url: redisUrl });
-      this.subscriber = this.publisher.duplicate();
+      // Directly use REDIS_URL if available
+      const redisUrl = this.configService.get<string>('REDIS_URL');
+      
+      if (redisUrl) {
+        this.logger.log('Using REDIS_URL for connection');
+        this.publisher = createClient({ url: redisUrl });
+        this.subscriber = this.publisher.duplicate();
+      } else {
+        // Fallback to individual parameters only if URL is not available
+        const host = this.configService.get('REDIS_HOST', 'localhost');
+        const port = this.configService.get('REDIS_PORT', 6379);
+        const password = this.configService.get('REDIS_PASSWORD', '');
+        
+        this.logger.log(`Using Redis connection params: ${host}:${port}`);
+        
+        const options: any = { 
+          socket: {
+            host,
+            port
+          }
+        };
+        
+        if (password) {
+          options.password = password;
+        }
+        
+        this.publisher = createClient(options);
+        this.subscriber = this.publisher.duplicate();
+      }
 
       this.publisher.on('error', (err) => {
         this.logger.error(`Redis publisher error: ${err.message}`);
