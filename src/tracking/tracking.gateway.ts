@@ -128,10 +128,15 @@ export class TrackingGateway
 
     try {
       const testClient = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: 5, // Increased from 3
         enableOfflineQueue: true,
-        connectTimeout: 5000,
-        tls: {}
+        connectTimeout: 10000, // Increased to 10 seconds
+        retryStrategy: (times) => Math.min(times * 500, 5000), // More aggressive retry
+        tls: {},
+        reconnectOnError: (err) => {
+          this.logger.warn(`Attempting reconnect: ${err.message}`);
+          return true;
+        }
       });
 
       // Add connection listeners
@@ -152,10 +157,15 @@ export class TrackingGateway
     }
 
     const pubClient = new Redis(redisUrl, {
-      tls: {}
+      tls: {},
+      connectTimeout: 10000,
+      retryStrategy: (times) => Math.min(times * 500, 5000)
     });
+    
     const subClient = new Redis(redisUrl, {
-      tls: {}
+      tls: {},
+      connectTimeout: 10000,
+      retryStrategy: (times) => Math.min(times * 500, 5000)
     });
 
     server.adapter(createAdapter(pubClient, subClient));
