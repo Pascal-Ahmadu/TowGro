@@ -136,30 +136,51 @@ export class TrackingGateway
             this.logger.debug(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
             return delay;
           }
-        }
+        },
+        // Add more detailed logging for connection issues
+        legacyMode: false
       });
       
-      const subClient = pubClient.duplicate();
-      
-      // Add error handlers
-      pubClient.on('error', (err) => {
-        this.logger.error(`Redis pub client error: ${err.message}`);
-      });
-      
-      subClient.on('error', (err) => {
-        this.logger.error(`Redis sub client error: ${err.message}`);
-      });
-      
-      // Add connection event handlers
+      // Add more detailed connection logging
       pubClient.on('connect', () => {
         this.logger.log('Redis pub client connected successfully');
       });
       
+      pubClient.on('ready', () => {
+        this.logger.log('Redis pub client ready');
+      });
+      
+      // Add error handlers with more detailed information
+      pubClient.on('error', (err) => {
+        this.logger.error(`Redis pub client error: ${err.message}`, err.stack);
+        if (err.code === 'ENOTFOUND') {
+          this.logger.error(`Could not resolve Redis hostname. Check your REDIS_URL configuration.`);
+        }
+      });
+      
+      // Create sub client after pub client is properly configured
+      const subClient = pubClient.duplicate();
+      
       subClient.on('connect', () => {
         this.logger.log('Redis sub client connected successfully');
       });
+      
+      subClient.on('ready', () => {
+        this.logger.log('Redis sub client ready');
+      });
+      
+      subClient.on('error', (err) => {
+        this.logger.error(`Redis sub client error: ${err.message}`, err.stack);
+      });
   
-      await Promise.all([pubClient.connect(), subClient.connect()]);
+      // Connect with proper error handling
+      try {
+        await Promise.all([pubClient.connect(), subClient.connect()]);
+        this.logger.log('Redis clients connected successfully');
+      } catch (connError) {
+        this.logger.error(`Failed to connect to Redis: ${connError.message}`);
+        throw connError; // Re-throw to be caught by the outer try/catch
+      }
   
       server.adapter(createAdapter(pubClient, subClient));
       this.logger.log('Redis adapter configured for WebSocket gateway');

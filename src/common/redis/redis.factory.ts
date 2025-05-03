@@ -12,7 +12,7 @@ export class RedisFactory {
     const redisUrl = this.configService.get<string>('REDIS_URL');
     
     if (redisUrl) {
-      console.log('Using REDIS_URL for connection');
+      console.log('Using REDIS_URL for connection:', redisUrl.split('@').pop()); // Only log host part for security
       return new Redis(redisUrl, {
         lazyConnect: false,
         reconnectOnError: (err) => {
@@ -27,7 +27,7 @@ export class RedisFactory {
     }
     
     // Fallback to individual connection parameters
-    const host = this.configService.get<string>('REDIS_HOST', 'redis');
+    const host = this.configService.get<string>('REDIS_HOST', 'localhost'); // Changed from 'redis' to 'localhost'
     const port = this.configService.get<number>('REDIS_PORT', 6379);
     const password = this.configService.get<string>('REDIS_PASSWORD', '');
 
