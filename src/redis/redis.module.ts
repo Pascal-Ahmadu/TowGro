@@ -8,6 +8,17 @@ import redisConfig from './redis.config';
     RedisModule.forRootAsync({
       imports: [ConfigModule.forFeature(redisConfig)],
       useFactory: (config: ConfigService) => {
+        // Check for REDIS_URL first
+        const redisUrl = config.get('REDIS_URL');
+        
+        if (redisUrl) {
+          return {
+            type: 'single',
+            url: redisUrl,
+          };
+        }
+        
+        // Fallback to individual parameters
         return {
           type: 'single',
           options: {
