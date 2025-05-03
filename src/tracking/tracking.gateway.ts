@@ -18,13 +18,13 @@ import {
   Injectable,
 } from '@nestjs/common';
 import { createAdapter } from '@socket.io/redis-adapter';
-import * as redis from 'redis';
+import Redis from 'ioredis';  // Changed from * as redis import
 import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard';
 import { WsThrottlerGuard } from '../common/guards/ws-throttler.guard';
 import { UpdateLocationDto, JoinDispatchDto } from './dto/tracking.dto';
 import { ConfigService } from '@nestjs/config';
-// Add RedisFactory import at the top
-import { RedisFactory } from '../common/redis/redis.factory';
+// Import RedisFactory if needed
+// import { RedisFactory } from '../common/redis/redis.factory';
 
 // Remove any adapter configuration from the decorator
 @WebSocketGateway({
@@ -35,7 +35,6 @@ import { RedisFactory } from '../common/redis/redis.factory';
   }
 })
 
-
 export class TrackingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -43,11 +42,8 @@ export class TrackingGateway
   server: Server;
   private readonly logger = new Logger(TrackingGateway.name);
 
-  // Update constructor to inject RedisFactory
-  constructor(
-    private configService: ConfigService,
-    private redisFactory: RedisFactory
-  ) {}
+  // Single constructor definition
+  constructor(private configService: ConfigService) {}
 
   // Interface implementation
   afterInit(server: Server) {
@@ -121,19 +117,18 @@ export class TrackingGateway
       throw new WsException(`Could not join dispatch: ${error.message}`);
     }
   }
-
+  
   private async setupRedisAdapter(server: Server) {
     const redisUrl = this.configService.get<string>('REDIS_URL');
     
     if (!redisUrl) {
-      this.logger.error('Redis connection failed: REDIS_URL required');
+      this.logger.error('Redis connection failed: REDIS_URL environment variable required');
       process.exit(1);
     }
 
-    const pubClient = this.redisFactory.createClient();
-    const subClient = this.redisFactory.createClient();
+    const pubClient = new Redis(redisUrl);
+    const subClient = new Redis(redisUrl);
 
-    // Use the official createAdapter function instead of RedisIoAdapter
     server.adapter(createAdapter(pubClient, subClient));
     this.logger.log(`WebSocket Redis adapter configured with URL: ${redisUrl.split('@')[1]}`);
   }
