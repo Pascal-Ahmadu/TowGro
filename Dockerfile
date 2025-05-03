@@ -41,10 +41,7 @@ RUN npm run migration:run
 EXPOSE 3000
 
 ENV NODE_ENV=production
-# Remove individual ENV declarations
-COPY .env .
-# Add explicit Redis URL for Docker networking
-ENV REDIS_URL=redis://red-d08c11ngi27c738dr6t0:6379
+# Remove hardcoded Redis URL (will be set by Render's environment)
 ENV DEBUG=ioredis:*
 
 # Update path to match NestJS structure
