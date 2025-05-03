@@ -23,6 +23,8 @@ import { WsJwtAuthGuard } from '../auth/guards/ws-jwt-auth.guard';
 import { WsThrottlerGuard } from '../common/guards/ws-throttler.guard';
 import { UpdateLocationDto, JoinDispatchDto } from './dto/tracking.dto';
 import { ConfigService } from '@nestjs/config';
+// Add RedisFactory import at the top
+import { RedisFactory } from '../common/redis/redis.factory';
 
 // Remove any adapter configuration from the decorator
 @WebSocketGateway({
@@ -32,6 +34,8 @@ import { ConfigService } from '@nestjs/config';
     credentials: true,
   }
 })
+
+
 export class TrackingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
@@ -39,7 +43,11 @@ export class TrackingGateway
   server: Server;
   private readonly logger = new Logger(TrackingGateway.name);
 
-  constructor(private configService: ConfigService) {}
+  // Update constructor to inject RedisFactory
+  constructor(
+    private configService: ConfigService,
+    private redisFactory: RedisFactory
+  ) {}
 
   // Interface implementation
   afterInit(server: Server) {
@@ -114,79 +122,19 @@ export class TrackingGateway
     }
   }
 
-  // Update the setupRedisAdapter method with better error handling
   private async setupRedisAdapter(server: Server) {
-    try {
-      // First check if REDIS_URL is available
-      const redisUrl = this.configService.get<string>('REDIS_URL');
-      
-      if (!redisUrl) {
-        this.logger.warn('No REDIS_URL found, WebSocket scaling will be limited');
-        return; // Skip adapter setup if no Redis URL
-      }
-      
-      this.logger.log(`Using Redis URL for WebSocket adapter: ${redisUrl.split('@').pop()}`); // Log only host part for security
-      
-      // Create Redis clients with proper socket configuration
-      const pubClient = redis.createClient({
-        url: redisUrl,
-        socket: {
-          reconnectStrategy: (retries) => {
-            const delay = Math.min(retries * 50, 1000);
-            this.logger.debug(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
-            return delay;
-          }
-        },
-        // Add more detailed logging for connection issues
-        legacyMode: false
-      });
-      
-      // Add more detailed connection logging
-      pubClient.on('connect', () => {
-        this.logger.log('Redis pub client connected successfully');
-      });
-      
-      pubClient.on('ready', () => {
-        this.logger.log('Redis pub client ready');
-      });
-      
-      // Add error handlers with more detailed information
-      pubClient.on('error', (err) => {
-        this.logger.error(`Redis pub client error: ${err.message}`, err.stack);
-        if (err.code === 'ENOTFOUND') {
-          this.logger.error(`Could not resolve Redis hostname. Check your REDIS_URL configuration.`);
-        }
-      });
-      
-      // Create sub client after pub client is properly configured
-      const subClient = pubClient.duplicate();
-      
-      subClient.on('connect', () => {
-        this.logger.log('Redis sub client connected successfully');
-      });
-      
-      subClient.on('ready', () => {
-        this.logger.log('Redis sub client ready');
-      });
-      
-      subClient.on('error', (err) => {
-        this.logger.error(`Redis sub client error: ${err.message}`, err.stack);
-      });
-  
-      // Connect with proper error handling
-      try {
-        await Promise.all([pubClient.connect(), subClient.connect()]);
-        this.logger.log('Redis clients connected successfully');
-      } catch (connError) {
-        this.logger.error(`Failed to connect to Redis: ${connError.message}`);
-        throw connError; // Re-throw to be caught by the outer try/catch
-      }
-  
-      server.adapter(createAdapter(pubClient, subClient));
-      this.logger.log('Redis adapter configured for WebSocket gateway');
-    } catch (error) {
-      this.logger.error(`Failed to setup Redis adapter: ${error.message}`);
-      // Continue without Redis adapter - will work for single instance
+    const redisUrl = this.configService.get<string>('REDIS_URL');
+    
+    if (!redisUrl) {
+      this.logger.error('Redis connection failed: REDIS_URL required');
+      process.exit(1);
     }
+
+    const pubClient = this.redisFactory.createClient();
+    const subClient = this.redisFactory.createClient();
+
+    // Use the official createAdapter function instead of RedisIoAdapter
+    server.adapter(createAdapter(pubClient, subClient));
+    this.logger.log(`WebSocket Redis adapter configured with URL: ${redisUrl.split('@')[1]}`);
   }
 }
