@@ -24,7 +24,7 @@ services:
           type: redis
           property: connectionString
       
-      # You can keep these as fallbacks, but REDIS_URL should take precedence
+      # Individual Redis connection parameters as fallbacks
       - key: REDIS_HOST
         fromService:
           name: towgrow-redis
@@ -35,11 +35,7 @@ services:
           name: towgrow-redis
           type: redis
           property: port
-      - key: REDIS_URL
-        fromService:
-          name: towgrow-redis
-          type: redis
-          property: connectionString
+      # Remove duplicate REDIS_URL entry
 
   - type: redis
     name: towgrow-redis
