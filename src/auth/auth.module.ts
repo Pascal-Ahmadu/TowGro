@@ -88,7 +88,7 @@ function createMockRedisClient() {
       inject: [ConfigService],
       useFactory: (cfg: ConfigService) => ({
         type: 'single',
-        url: cfg.get('REDIS_URL'),
+        url: cfg.get('REDIS_URL'), // Directly use Render's connection URL
       }),
     }),
     MailModule,
@@ -103,24 +103,14 @@ function createMockRedisClient() {
     {
       provide: 'REDIS_CLIENT',
       useFactory: (configService: ConfigService) => {
-        const redisHost = configService.get('REDIS_HOST');
-        const redisPort = parseInt(configService.get('REDIS_PORT'));
-        const redisPass = configService.get('REDIS_PASSWORD');
-
-        return new Redis({
-          host: redisHost,
-          port: redisPort,
-          password: redisPass,
+        return new Redis(configService.get('REDIS_URL'), {
           lazyConnect: true,
-          retryStrategy: (times) => {
-            console.log(`Redis connection retry attempt ${times}`);
-            return Math.min(times * 500, 5000);
-          },
+          retryStrategy: (times) => Math.min(times * 500, 5000),
           maxRetriesPerRequest: 3,
           enableOfflineQueue: false,
           connectTimeout: 10000,
         });
-      }, // <-- Add missing comma here
+      },
       inject: [ConfigService],
     },
     // AccountLockoutService as a provider
