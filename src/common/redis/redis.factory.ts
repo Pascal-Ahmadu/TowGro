@@ -10,52 +10,22 @@ export class RedisFactory {
   constructor(private configService: ConfigService) {}
 
   createClient(): Redis {
-    // First check if REDIS_URL is available
     const redisUrl = this.configService.get<string>('REDIS_URL');
     
-    if (redisUrl) {
-      this.logger.log(`Using REDIS_URL for connection: ${redisUrl.split('@').pop()}`); // Only log host part for security
-      return new Redis(redisUrl, {
-        lazyConnect: false,
-        reconnectOnError: (err) => {
-          this.logger.error(`Redis reconnect on error: ${err.message}`);
-          return true;
-        },
-        retryStrategy: (times) => {
-          this.logger.log(`Redis retry attempt ${times}`);
-          return Math.min(times * 100, 3000);
-        },
-        // Add more detailed connection options
-        enableOfflineQueue: true,
-        maxRetriesPerRequest: 3,
-        connectTimeout: 10000,
-      });
+    if (!redisUrl) {
+      throw new Error('REDIS_URL environment variable is required');
     }
-    
-    // Fallback to individual connection parameters
-    const host = this.configService.get<string>('REDIS_HOST', 'localhost');
-    const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD', '');
 
-    this.logger.log(`Using Redis connection params: ${host}:${port}`);
+    this.logger.log(`Using Redis URL: ${redisUrl.split('@')[1]}`); // Only show host:port
     
-    return new Redis({
-      host,
-      port,
-      password: password || undefined, // Only set if password exists
-      lazyConnect: false,
-      reconnectOnError: (err) => {
-        this.logger.error(`Redis reconnect on error: ${err.message}`);
-        return true;
-      },
-      retryStrategy: (times) => {
-        this.logger.log(`Redis retry attempt ${times}`);
-        return Math.min(times * 100, 3000);
-      },
-      // Add more detailed connection options
-      enableOfflineQueue: true,
-      maxRetriesPerRequest: 3,
+    return new Redis(redisUrl, {
+      maxRetriesPerRequest: 5,
       connectTimeout: 10000,
+      retryStrategy: (times) => Math.min(times * 200, 5000),
+      reconnectOnError: (err) => {
+        this.logger.error(`Redis connection error: ${err.message}`);
+        return true;
+      }
     });
   }
 }
