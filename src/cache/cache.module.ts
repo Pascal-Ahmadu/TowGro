@@ -6,6 +6,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 @Module({
   imports: [
     NestJSCacheModule.registerAsync({
+      imports: [ConfigModule], // Add ConfigModule import
+      inject: [ConfigService], // Explicitly inject ConfigService
       useFactory: async (configService: ConfigService) => {
         const redisUrl = configService.get<string>('REDIS_URL');
         if (!redisUrl) {
