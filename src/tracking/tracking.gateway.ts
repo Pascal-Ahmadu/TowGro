@@ -126,7 +126,7 @@ export class TrackingGateway
   }
   
   private async initializeRedisClients() {
-    const redisUrl = this.configService.get<string>('REDIS_URL');
+    let redisUrl = this.configService.get<string>('REDIS_URL');
     
     if (!redisUrl) {
       this.logger.warn('Redis URL not provided in environment variables. WebSocket gateway will operate without Redis adapter.');
