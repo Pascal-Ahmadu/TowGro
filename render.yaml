@@ -28,11 +28,11 @@ services:
           name: towgrow-redis
           type: redis
           property: port
-      - key: REDIS_PASSWORD
+      - key: REDIS_URL
         fromService:
           name: towgrow-redis
           type: redis
-          property: password
+          property: connectionString
 
   - type: redis
     name: towgrow-redis
