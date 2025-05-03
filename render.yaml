@@ -18,6 +18,13 @@ services:
         value: neondb
         
       # Redis connection (Render)
+      - key: REDIS_URL
+        fromService:
+          name: towgrow-redis
+          type: redis
+          property: connectionString
+      
+      # You can keep these as fallbacks, but REDIS_URL should take precedence
       - key: REDIS_HOST
         fromService:
           name: towgrow-redis

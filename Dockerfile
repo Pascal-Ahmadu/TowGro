@@ -41,7 +41,8 @@ RUN npm run migration:run
 EXPOSE 3000
 
 ENV NODE_ENV=production
-ENV REDIS_HOST=redis
+# Remove this line or update it to match your actual Redis host
+# ENV REDIS_HOST=redis
 ENV DEBUG=ioredis:*
 
 # Update path to match NestJS structure
