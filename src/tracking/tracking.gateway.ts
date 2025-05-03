@@ -126,14 +126,14 @@ export class TrackingGateway
       process.exit(1);
     }
 
-    // Add connection validation with full error details
     try {
       const testClient = new Redis(redisUrl, {
-        maxRetriesPerRequest: 0, // Disable automatic retries
-        enableOfflineQueue: false, // Fail fast when offline
-        connectTimeout: 5000 // 5 second timeout
+        maxRetriesPerRequest: 3,
+        enableOfflineQueue: true,
+        connectTimeout: 5000,
+        tls: {}
       });
-      
+
       // Add connection listeners
       testClient.on('error', (err) => {
         this.logger.error(`Redis connection error: ${err.message}`);
@@ -148,18 +148,17 @@ export class TrackingGateway
       testClient.disconnect();
     } catch (error) {
       this.logger.error(`Redis connection failed to ${redisUrl}: ${error.message}`);
-      this.logger.error(`Connection details: ${JSON.stringify({
-        address: error.address,
-        port: error.port,
-        code: error.code
-      })}`);
       process.exit(1);
     }
 
-    const pubClient = new Redis(redisUrl);
-    const subClient = new Redis(redisUrl);
+    const pubClient = new Redis(redisUrl, {
+      tls: {}
+    });
+    const subClient = new Redis(redisUrl, {
+      tls: {}
+    });
 
     server.adapter(createAdapter(pubClient, subClient));
     this.logger.log(`WebSocket Redis adapter configured with URL: ${redisUrl.split('@')[1]}`);
-}
+  }
 }
