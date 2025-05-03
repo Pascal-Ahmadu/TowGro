@@ -110,17 +110,17 @@ function createMockRedisClient() {
         return new Redis({
           host: redisHost,
           port: redisPort,
-          password: redisPass, // Add password
-          lazyConnect: true, // Don't connect immediately
+          password: redisPass,
+          lazyConnect: true,
           retryStrategy: (times) => {
             console.log(`Redis connection retry attempt ${times}`);
-            return Math.min(times * 500, 5000); // Increase retry interval with backoff
+            return Math.min(times * 500, 5000);
           },
           maxRetriesPerRequest: 3,
-          enableOfflineQueue: false, // Don't queue commands when disconnected
-          connectTimeout: 10000, // 10 seconds timeout
+          enableOfflineQueue: false,
+          connectTimeout: 10000,
         });
-      }
+      }, // <-- Add missing comma here
       inject: [ConfigService],
     },
     // AccountLockoutService as a provider
