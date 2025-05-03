@@ -56,7 +56,7 @@ export class TrackingGateway
     this.logger.log(`Setting WebSocket CORS origin to: ${corsOrigin}`);
     
     // Handle multiple origins if needed
-    const origins = corsOrigin.split(',').map(origin => origin.trim());
+    const origins = corsOrigin ? corsOrigin.split(',').map(origin => origin.trim()) : ['*'];
     server.engine.on("headers", (headers, req) => {
       const requestOrigin = req.headers.origin;
       if (origins.includes(requestOrigin) || origins.includes('*')) {
@@ -75,6 +75,43 @@ export class TrackingGateway
   // Single disconnection handler implementation
   handleDisconnect(client: Socket) {
     this.logger.debug(`Client disconnected: ${client.id}`);
+  }
+
+  // Add the missing handleLocation method that's being called from TrackingService
+  async handleLocation(dto: UpdateLocationDto): Promise<void> {
+    try {
+      this.logger.debug(`Broadcasting location update for vehicle ${dto.vehicleId}`);
+      
+      // Emit to the specific dispatch room if available
+      if (dto.dispatchId) {
+        this.server.to(`dispatch_${dto.dispatchId}`).emit('location_update', dto);
+      }
+      
+      // Also emit to the vehicle-specific room
+      this.server.to(`vehicle_${dto.vehicleId}`).emit('location_update', dto);
+      
+      // Emit to a general tracking channel for admin dashboards
+      this.server.emit('tracking_updates', dto);
+    } catch (error) {
+      this.logger.error(`Error broadcasting location: ${error.message}`);
+    }
+  }
+
+  // Add a method to join dispatch room
+  @UseGuards(WsJwtAuthGuard)
+  @SubscribeMessage('join_dispatch')
+  async joinDispatch(
+    @MessageBody() data: JoinDispatchDto,
+    @ConnectedSocket() client: Socket,
+  ): Promise<void> {
+    try {
+      const room = `dispatch_${data.dispatchId}`;
+      await client.join(room);
+      this.logger.debug(`Client ${client.id} joined room ${room}`);
+      client.emit('room_joined', { room, status: 'joined' });
+    } catch (error) {
+      throw new WsException(`Could not join dispatch: ${error.message}`);
+    }
   }
 
   // Update the setupRedisAdapter method with better error handling
@@ -131,7 +168,4 @@ export class TrackingGateway
       // Continue without Redis adapter - will work for single instance
     }
   }
-
-  // Rest of your methods remain unchanged
-  // ...
 }
