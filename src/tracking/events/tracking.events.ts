@@ -48,7 +48,7 @@ export class TrackingEvents implements OnModuleInit, OnModuleDestroy {
 
   private async setupRedisClients() {
     try {
-      const redisUrl = `redis://${this.configService.get('REDIS_HOST')}:${this.configService.get('REDIS_PORT')}`;
+      const redisUrl = `redis://:${this.configService.get('REDIS_PASSWORD')}@${this.configService.get('REDIS_HOST')}:${this.configService.get('REDIS_PORT')}`;
 
       this.publisher = createClient({ url: redisUrl });
       this.subscriber = this.publisher.duplicate();

@@ -10,12 +10,12 @@ export class RedisFactory {
   createClient(): Redis {
     const host = this.configService.get<string>('REDIS_HOST', 'redis');
     const port = this.configService.get<number>('REDIS_PORT', 6379);
-
-    console.log(`Creating Redis client with connection to ${host}:${port}`);
+    const password = this.configService.get<string>('REDIS_PASSWORD', '');
 
     return new Redis({
       host,
       port,
+      password, // Add password
       lazyConnect: false,
       reconnectOnError: (err) => {
         console.log(`Redis reconnect on error: ${err.message}`);

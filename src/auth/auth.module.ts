@@ -103,48 +103,24 @@ function createMockRedisClient() {
     {
       provide: 'REDIS_CLIENT',
       useFactory: (configService: ConfigService) => {
-        const redisHost = configService.get('REDIS_HOST') || 'redis';
-        const redisPort = parseInt(configService.get('REDIS_PORT') || '6379');
-        console.log(
-          `Creating Redis client for Auth module at ${redisHost}:${redisPort}`,
-        );
+        const redisHost = configService.get('REDIS_HOST');
+        const redisPort = parseInt(configService.get('REDIS_PORT'));
+        const redisPass = configService.get('REDIS_PASSWORD');
 
-        try {
-          const client = new Redis({
-            host: redisHost,
-            port: redisPort,
-            lazyConnect: true, // Don't connect immediately
-            retryStrategy: (times) => {
-              console.log(`Redis connection retry attempt ${times}`);
-              return Math.min(times * 500, 5000); // Increase retry interval with backoff
-            },
-            maxRetriesPerRequest: 3,
-            enableOfflineQueue: false, // Don't queue commands when disconnected
-            connectTimeout: 10000, // 10 seconds timeout
-          });
-
-          client.on('error', (err) => {
-            console.error('Redis client error:', err);
-            // Don't crash the app on Redis errors
-          });
-
-          client.on('connect', () => {
-            console.log('Redis client connected successfully');
-          });
-
-          // Create a mock Redis client if connection fails
-          client.connect().catch((err) => {
-            console.error('Failed to connect to Redis:', err);
-            console.warn('Using in-memory fallback for Redis operations');
-          });
-
-          return client;
-        } catch (error) {
-          console.error('Error creating Redis client:', error);
-          // Return a mock Redis client that doesn't throw errors
-          return createMockRedisClient();
-        }
-      },
+        return new Redis({
+          host: redisHost,
+          port: redisPort,
+          password: redisPass, // Add password
+          lazyConnect: true, // Don't connect immediately
+          retryStrategy: (times) => {
+            console.log(`Redis connection retry attempt ${times}`);
+            return Math.min(times * 500, 5000); // Increase retry interval with backoff
+          },
+          maxRetriesPerRequest: 3,
+          enableOfflineQueue: false, // Don't queue commands when disconnected
+          connectTimeout: 10000, // 10 seconds timeout
+        });
+      }
       inject: [ConfigService],
     },
     // AccountLockoutService as a provider
