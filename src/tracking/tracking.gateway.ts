@@ -126,10 +126,21 @@ export class TrackingGateway
       process.exit(1);
     }
 
+    // Add connection validation
+    try {
+      const testClient = new Redis(redisUrl);
+      await testClient.ping();
+      this.logger.log(`Redis connection validated to: ${redisUrl.split('@')[1]}`);
+      testClient.disconnect();
+    } catch (error) {
+      this.logger.error(`Redis connection failed to ${redisUrl}: ${error.message}`);
+      process.exit(1);
+    }
+
     const pubClient = new Redis(redisUrl);
     const subClient = new Redis(redisUrl);
 
     server.adapter(createAdapter(pubClient, subClient));
     this.logger.log(`WebSocket Redis adapter configured with URL: ${redisUrl.split('@')[1]}`);
-  }
+}
 }
