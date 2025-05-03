@@ -24,9 +24,13 @@ import { WsThrottlerGuard } from '../common/guards/ws-throttler.guard';
 import { UpdateLocationDto, JoinDispatchDto } from './dto/tracking.dto';
 import { ConfigService } from '@nestjs/config';
 
+// Remove any adapter configuration from the decorator
 @WebSocketGateway({
   transports: ['websocket'],
-  // Remove the static adapter configuration
+  cors: {
+    origin: process.env.WS_CORS_ORIGIN || 'http://localhost:4200',
+    credentials: true,
+  }
 })
 export class TrackingGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -40,9 +44,26 @@ export class TrackingGateway
   // Interface implementation
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
-
-    // Always setup Redis adapter in production and development
-    this.setupRedisAdapter(server);
+    
+    // Setup Redis adapter with proper error handling
+    this.setupRedisAdapter(server).catch(err => {
+      this.logger.error(`Failed to initialize Redis adapter: ${err.message}`);
+      this.logger.warn('WebSocket gateway will operate without Redis adapter (limited to single instance)');
+    });
+    
+    // In the afterInit method
+    const corsOrigin = this.configService.get<string>('WS_CORS_ORIGIN');
+    this.logger.log(`Setting WebSocket CORS origin to: ${corsOrigin}`);
+    
+    // Handle multiple origins if needed
+    const origins = corsOrigin.split(',').map(origin => origin.trim());
+    server.engine.on("headers", (headers, req) => {
+      const requestOrigin = req.headers.origin;
+      if (origins.includes(requestOrigin) || origins.includes('*')) {
+        headers["Access-Control-Allow-Origin"] = requestOrigin;
+        headers["Access-Control-Allow-Credentials"] = "true";
+      }
+    });
   }
 
   // Combined connection handler implementation
@@ -56,7 +77,7 @@ export class TrackingGateway
     this.logger.debug(`Client disconnected: ${client.id}`);
   }
 
-  // Update the setupRedisAdapter method
+  // Update the setupRedisAdapter method with better error handling
   private async setupRedisAdapter(server: Server) {
     try {
       // First check if REDIS_URL is available
@@ -67,8 +88,20 @@ export class TrackingGateway
         return; // Skip adapter setup if no Redis URL
       }
       
-      this.logger.log('Using REDIS_URL for WebSocket adapter');
-      const pubClient = redis.createClient({ url: redisUrl });
+      this.logger.log(`Using Redis URL for WebSocket adapter: ${redisUrl.split('@').pop()}`); // Log only host part for security
+      
+      // Create Redis clients with proper socket configuration
+      const pubClient = redis.createClient({
+        url: redisUrl,
+        socket: {
+          reconnectStrategy: (retries) => {
+            const delay = Math.min(retries * 50, 1000);
+            this.logger.debug(`Redis reconnecting in ${delay}ms (attempt ${retries})`);
+            return delay;
+          }
+        }
+      });
+      
       const subClient = pubClient.duplicate();
       
       // Add error handlers
@@ -78,6 +111,15 @@ export class TrackingGateway
       
       subClient.on('error', (err) => {
         this.logger.error(`Redis sub client error: ${err.message}`);
+      });
+      
+      // Add connection event handlers
+      pubClient.on('connect', () => {
+        this.logger.log('Redis pub client connected successfully');
+      });
+      
+      subClient.on('connect', () => {
+        this.logger.log('Redis sub client connected successfully');
       });
   
       await Promise.all([pubClient.connect(), subClient.connect()]);
