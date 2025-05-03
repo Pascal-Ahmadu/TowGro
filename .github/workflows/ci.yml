@@ -42,13 +42,12 @@ jobs:
         image: redis:7-alpine
         ports: [ "6379:6379" ]
         options: >-
-          --health-cmd "redis-cli ping"
+          --health-cmd "redis-cli -a testpass ping"
           --health-interval 10s
-          --health-timeout 30s  # Increased timeout
-          --health-retries 10   # Increased retries
+          --health-timeout 30s
+          --health-retries 10
           --sysctl vm.overcommit_memory=1
-        env:
-          REDIS_ARGS: "--bind 0.0.0.0 --requirepass testpass"  # Explicit binding and auth
+        command: redis-server --bind 0.0.0.0 --requirepass testpass
 
     steps:
     - name: Checkout code
@@ -87,12 +86,6 @@ jobs:
             npm install --force
           fi
         fi
-
-    - name: Check Redis connectivity
-      run: |
-        echo "Waiting for Redis..."
-        timeout 60 bash -c 'until redis-cli -h localhost -p 6379 -a testpass ping; do sleep 2; done'
-        echo "Redis connection established"
 
     - name: Copy environment file
       run: |
