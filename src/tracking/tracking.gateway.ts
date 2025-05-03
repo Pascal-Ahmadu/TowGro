@@ -126,14 +126,33 @@ export class TrackingGateway
       process.exit(1);
     }
 
-    // Add connection validation
+    // Add connection validation with full error details
     try {
-      const testClient = new Redis(redisUrl);
+      const testClient = new Redis(redisUrl, {
+        maxRetriesPerRequest: 0, // Disable automatic retries
+        enableOfflineQueue: false, // Fail fast when offline
+        connectTimeout: 5000 // 5 second timeout
+      });
+      
+      // Add connection listeners
+      testClient.on('error', (err) => {
+        this.logger.error(`Redis connection error: ${err.message}`);
+      });
+
+      testClient.on('connect', () => {
+        this.logger.log(`Temporary connection established to Redis at: ${redisUrl}`);
+      });
+
       await testClient.ping();
-      this.logger.log(`Redis connection validated to: ${redisUrl.split('@')[1]}`);
+      this.logger.log(`Redis connection validated to: ${redisUrl}`);
       testClient.disconnect();
     } catch (error) {
       this.logger.error(`Redis connection failed to ${redisUrl}: ${error.message}`);
+      this.logger.error(`Connection details: ${JSON.stringify({
+        address: error.address,
+        port: error.port,
+        code: error.code
+      })}`);
       process.exit(1);
     }
 
