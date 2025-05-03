@@ -28,7 +28,7 @@ import { ConfigService } from '@nestjs/config';
 @WebSocketGateway({
   transports: ['websocket'],
   cors: {
-    origin: process.env.WS_CORS_ORIGIN || 'http://localhost:4200',
+    origin: process.env.WS_CORS_ORIGIN,
     credentials: true,
   }
 })

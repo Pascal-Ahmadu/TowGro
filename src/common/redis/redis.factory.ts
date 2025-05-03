@@ -11,13 +11,10 @@ export class RedisFactory {
 
   createClient(): Redis {
     const redisUrl = this.configService.get<string>('REDIS_URL');
-    
     if (!redisUrl) {
-      throw new Error('REDIS_URL environment variable is required');
+      throw new Error('REDIS_URL environment variable must be defined');
     }
 
-    this.logger.log(`Using Redis URL: ${redisUrl.split('@')[1]}`); // Only show host:port
-    
     return new Redis(redisUrl, {
       maxRetriesPerRequest: 5,
       connectTimeout: 10000,

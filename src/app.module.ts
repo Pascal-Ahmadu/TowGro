@@ -97,24 +97,15 @@ import { RedisHealth } from './health/redis-health';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const host = configService.get('REDIS_HOST', 'localhost');
-        const port = configService.get('REDIS_PORT', 6379);
-        const password = configService.get('REDIS_PASSWORD', '');
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (!redisUrl) {
+          throw new Error('REDIS_URL environment variable must be defined');
+        }
 
         return {
           store: redisInsStore,
-          socket: {
-            host,
-            port,
-            tls:
-              host !== 'localhost' ? { rejectUnauthorized: false } : undefined,
-          },
-          password: password || undefined,
-          ttl: 60, // seconds
-          // Add error handling
-          onError: (error) => {
-            console.error('Redis cache error:', error);
-          },
+          url: redisUrl,
+          ttl: 60,
         };
       },
     }),
