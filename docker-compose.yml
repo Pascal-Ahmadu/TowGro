@@ -11,25 +11,15 @@ services:
       - DB_USER=postgres
       - DB_PASS=manchester
       - DB_NAME=towgrow_app
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - MAIL_HOST=live.smtp.mailtrap.io
-      - MAIL_PORT=587  # Recommended port with STARTTLS
-      - MAIL_USER=apismtp@mailtrap.io  # Correct username from credentials
-      - MAIL_PASSWORD=8f23c750ff6bc92c1355e5539ae1bfdb
+      # Remove these individual Redis env vars
+      # - REDIS_HOST=redis
+      # - REDIS_PORT=6379
     depends_on:
-      - postgres
-      - redis
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
     command: node dist/apps/auth-service/main
-
-  postgres:
-    image: postgres:17
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=manchester
-      - POSTGRES_DB=towgrow_app
-    volumes:
-      - pgdata:/var/lib/postgresql/data
 
   redis:
     image: redis:6
@@ -38,6 +28,11 @@ services:
     volumes:
       - redisdata:/data
     command: redis-server --save 60 1 --loglevel warning
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
 
 volumes:
   pgdata:

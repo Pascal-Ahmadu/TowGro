@@ -97,6 +97,7 @@ import { RedisHealth } from './health/redis-health';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
+<<<<<<< HEAD
         const redisUrl = configService.get('REDIS_URL');
         
         return {
@@ -107,6 +108,17 @@ import { RedisHealth } from './health/redis-health';
           onError: (error) => {
             console.error('Redis cache error:', error);
           },
+=======
+        const redisUrl = configService.get<string>('REDIS_URL');
+        if (!redisUrl) {
+          throw new Error('REDIS_URL environment variable must be defined');
+        }
+
+        return {
+          store: redisInsStore,
+          url: redisUrl,
+          ttl: 60,
+>>>>>>> 26f6b1d852e1c3ebcba803bf11d4dfb39ab69d8b
         };
       },
     }),

@@ -73,7 +73,7 @@ function createMockRedisClient() {
     ConfigModule.forRoot(), // Make sure ConfigModule is properly initialized
     forwardRef(() => UsersModule), // Use forwardRef for potential circular deps
     PassportModule.register({ defaultStrategy: 'jwt' }), // Initialize Passport
-    forwardRef(() => RedisCacheModule), // Use forwardRef
+    forwardRef(() => RedisCacheModule),
     forwardRef(() => PaymentModule), // Already using forwardRef
     JwtModule.registerAsync({
       imports: [ConfigModule],

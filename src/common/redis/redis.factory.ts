@@ -1,51 +1,26 @@
 // src/common/redis/redis.factory.ts
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisFactory {
+  private readonly logger = new Logger(RedisFactory.name);
+  
   constructor(private configService: ConfigService) {}
 
   createClient(): Redis {
-    // First check if REDIS_URL is available
     const redisUrl = this.configService.get<string>('REDIS_URL');
     
-    if (redisUrl) {
-      console.log('Using REDIS_URL for connection:', redisUrl.split('@').pop()); // Only log host part for security
-      return new Redis(redisUrl, {
-        lazyConnect: false,
-        reconnectOnError: (err) => {
-          console.log(`Redis reconnect on error: ${err.message}`);
-          return true;
-        },
-        retryStrategy: (times) => {
-          console.log(`Redis retry attempt ${times}`);
-          return Math.min(times * 100, 3000);
-        },
-      });
-    }
-    
-    // Fallback to individual connection parameters
-    const host = this.configService.get<string>('REDIS_HOST', 'localhost'); // Changed from 'redis' to 'localhost'
-    const port = this.configService.get<number>('REDIS_PORT', 6379);
-    const password = this.configService.get<string>('REDIS_PASSWORD', '');
-
-    console.log(`Using Redis connection params: ${host}:${port}`);
-    
-    return new Redis({
-      host,
-      port,
-      password,
-      lazyConnect: false,
-      reconnectOnError: (err) => {
-        console.log(`Redis reconnect on error: ${err.message}`);
-        return true;
-      },
-      retryStrategy: (times) => {
-        console.log(`Redis retry attempt ${times}`);
-        return Math.min(times * 100, 3000);
-      },
+    // Add explicit connection configuration
+    return new Redis(redisUrl, {
+      port: 6379,
+      host: 'red-d08c11ngi27c738dr6t0',
+      maxRetriesPerRequest: 5,
+      connectTimeout: 10000,
+      retryStrategy: (times) => Math.min(times * 200, 5000),
+      // Explicitly disable TLS if not needed
+      tls: redisUrl.startsWith('rediss://') ? {} : undefined
     });
   }
 }
