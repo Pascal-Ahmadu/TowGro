@@ -1,7 +1,7 @@
 const { IsString, MinLength } = require('class-validator');
 const { ApiProperty } = require('@nestjs/swagger');
 
-class LoginDto {
+export class LoginDto {
   @ApiProperty({
     description: 'Email or phone number for login',
     example: 'user@example.com or +1234567890',
