@@ -8,6 +8,7 @@ import {
   Param,
   Delete,
   Request,
+  ParseEnumPipe
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -23,7 +24,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { BiometricRegisterDto } from './dto/biometric-register.dto';
+import { BiometricRegisterDto, BiometricType } from './dto/biometric-register.dto';
 import { BiometricAuthenticateDto } from './dto/biometric-authenticate.dto';
 
 @ApiTags('Authentication')
@@ -171,12 +172,25 @@ export class AuthController {
 
   @Delete('biometric/:type')
   @UseGuards(JWTAuthGuard)
-  @ApiOperation({ summary: 'Remove a biometric method' })
-  @ApiResponse({ status: 200, description: 'Biometric method removed' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ 
+    summary: 'Remove a biometric method',
+    description: 'Remove a registered biometric authentication method for the authenticated user. Valid types are "fingerprint" or "faceId".'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Biometric method removed',
+    schema: {
+      properties: {
+        success: { type: 'boolean', example: true },
+        message: { type: 'string', example: 'fingerprint removed successfully' }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Valid JWT token required' })
+  @ApiResponse({ status: 404, description: 'Not Found - Biometric method not registered' })
   async removeBiometric(
     @Req() req,
-    @Param('type') type: 'fingerprint' | 'faceId',
+    @Param('type', new ParseEnumPipe(BiometricType)) type: BiometricType,
   ) {
     return this.authService.removeBiometric(req.user.id, type);
   }
