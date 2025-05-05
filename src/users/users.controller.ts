@@ -38,7 +38,8 @@ import {
   ApiParam,
   ApiBody,
   ApiOkResponse,
-  ApiBearerAuth  // <-- Add this import
+ApiBearerAuth,
+ApiConsumes  
 } from '@nestjs/swagger';
 
 @Controller('users')
@@ -273,8 +274,53 @@ export class UsersController {
   }
 
   @Post('profile/avatar')
+  @ApiOperation({ 
+    summary: 'Upload user profile avatar',
+    description: 'Uploads a profile image for the authenticated user (JPEG/PNG/WEBP, max 5MB)' 
+  })
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    description: 'Image file to upload',
+    schema: {
+      type: 'object',
+      properties: {
+        file: {
+          type: 'string',
+          format: 'binary',
+          description: 'Supported formats: JPEG, PNG, WEBP (max 5MB)'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Avatar uploaded successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        avatarUrl: { 
+          type: 'string',
+          example: 'https://storage.example.com/avatars/user-123.jpg'
+        }
+      }
+    }
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid file format or size limit exceeded',
+    schema: {
+      example: {
+        statusCode: 400,
+        message: 'File too large. Maximum size is 5MB'
+      }
+    }
+  })
+  @ApiBearerAuth()
   @UseInterceptors(FileInterceptor('file'))
-  async uploadAvatar(@Request() req, @UploadedFile() file) {
+  async uploadAvatar(
+    @Request() req,
+    @UploadedFile() file: Express.Multer.File
+  ) {
     return this.usersService.updateAvatar(req.user.id, file);
   }
 }
