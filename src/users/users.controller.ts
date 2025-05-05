@@ -37,7 +37,8 @@ import {
   ApiQuery,
   ApiParam,
   ApiBody,
-  ApiOkResponse
+  ApiOkResponse,
+  ApiBearerAuth  // <-- Add this import
 } from '@nestjs/swagger';
 
 @Controller('users')
@@ -235,6 +236,38 @@ export class UsersController {
   }
 
   @Get('profile')
+  @ApiOperation({ 
+    summary: 'Get current user profile',
+    description: 'Retrieves authenticated user profile information with sensitive data' 
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'User profile retrieved successfully',
+    schema: {
+      example: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        email: 'user@example.com',
+        phoneNumber: '+1234567890',
+        roles: ['user'],
+        createdAt: '2023-06-15T14:30:00Z',
+        updatedAt: '2023-06-15T15:45:00Z',
+        emailVerified: true,
+        twoFactorEnabled: false,
+        lastLogin: '2023-06-15T14:35:00Z'
+      }
+    }
+  })
+  @ApiResponse({ 
+    status: 401, 
+    description: 'Unauthorized - Valid JWT token required',
+    schema: {
+      example: {
+        statusCode: 401,
+        message: 'Unauthorized'
+      }
+    }
+  })
+  @ApiBearerAuth()
   async getProfile(@Request() req) {
     return this.usersService.findById(req.user.id);
   }
