@@ -35,14 +35,10 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  @Throttle({
-    default: { limit: 5, ttl: 60000 }, // 5 requests per minute for login
-  })
-  @UseGuards(LocalAuthGuard)
-  async login(@Body() loginDto: LoginDto, @Req() req) {
-    // The LocalAuthGuard validates credentials before this executes
-    // loginDto is available here but typically not needed since req.user contains the authenticated user
-    return this.authService.login(req.user);
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  async login(@Body() loginDto: LoginDto) {
+    // Directly use the DTO for validation
+    return this.authService.validateUser(loginDto.identifier, loginDto.password);
   }
 
   @Post('refresh')

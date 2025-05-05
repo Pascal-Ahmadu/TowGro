@@ -20,5 +20,4 @@ export class LoginDto {
   @MinLength(8)
   password: string;
 }
-
-module.exports = LoginDto;
+// Remove this line: module.exports = LoginDto;
