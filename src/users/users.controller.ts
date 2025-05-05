@@ -15,20 +15,22 @@ import {
   HttpCode,
   HttpStatus,
   UseGuards,
-  UseInterceptors, // Add this
-  UploadedFile, // Add this
+  UseInterceptors,
+  UploadedFile,
+  NotFoundException,
 } from '@nestjs/common';
 
-// Update JwtAuthGuard import (line 15)
-import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard'; // Changed to JWTAuthGuard
+// Updated JwtAuthGuard import
+import { JWTAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { UpdateProfileDto } from './dto/update-profile.dto'; // You need to create this DTO
+import { UpdateProfileDto } from './dto/update-profile.dto';
 export { UpdateUserDto } from './dto/update-user.dto';
 import { CacheKey, CacheTTL } from '@nestjs/cache-manager';
 import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 
 @Controller('users')
 @UseGuards(JWTAuthGuard) // Add guard at controller level
@@ -40,6 +42,64 @@ export class UsersController {
   @Get()
   @CacheKey('all-users')
   @CacheTTL(30) // 30 seconds
+  @ApiOperation({ 
+    summary: 'Find user by identifier or get all users',
+    description: 'Retrieves a user by their email or phone number identifier, or returns a paginated list of all users.'
+  })
+  @ApiQuery({
+    name: 'identifier',
+    required: false,
+    description: 'Email address or phone number of the user to find',
+    example: 'user@example.com'
+  })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    description: 'Page number for pagination',
+    example: 1
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    description: 'Number of items per page',
+    example: 10
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User found or list of users returned',
+    schema: {
+      oneOf: [
+        {
+          properties: {
+            id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+            email: { type: 'string', example: 'user@example.com' },
+            phoneNumber: { type: 'string', example: '+1234567890' },
+            emailVerified: { type: 'boolean', example: true },
+            createdAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' },
+            updatedAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' }
+          }
+        },
+        {
+          properties: {
+            users: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  email: { type: 'string' },
+                  phoneNumber: { type: 'string' },
+                  emailVerified: { type: 'boolean' }
+                }
+              }
+            },
+            total: { type: 'number', example: 42 }
+          }
+        }
+      ]
+    }
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
   async findAll(
     @Query('identifier') identifier?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
@@ -49,11 +109,50 @@ export class UsersController {
 
     // If identifier is provided, find by email or phone
     if (identifier) {
-      return this.usersService.findByEmailOrPhoneNumber(identifier);
+      const user = await this.usersService.findByEmailOrPhoneNumber(identifier);
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+      return user;
     }
 
     // Otherwise, return paginated list of users
     return this.usersService.findAll(page, limit);
+  }
+
+  @Get('by-identifier')
+  @ApiOperation({ 
+    summary: 'Find user by identifier',
+    description: 'Retrieves a user by their email or phone number identifier.'
+  })
+  @ApiQuery({
+    name: 'identifier',
+    required: true,
+    description: 'Email address or phone number of the user to find',
+    example: 'user@example.com'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'User found',
+    schema: {
+      properties: {
+        id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+        email: { type: 'string', example: 'user@example.com' },
+        phoneNumber: { type: 'string', example: '+1234567890' },
+        emailVerified: { type: 'boolean', example: true },
+        createdAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' },
+        updatedAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' }
+      }
+    }
+  })
+  @ApiResponse({ status: 404, description: 'User not found' })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Valid JWT token required' })
+  async findOne(@Query('identifier') identifier: string): Promise<User> {
+    const user = await this.usersService.findByEmailOrPhoneNumber(identifier);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
   }
 
   @Get(':id')
@@ -87,10 +186,7 @@ export class UsersController {
     await this.usersService.deleteUser(id);
   }
 
-  // Add these endpoints to your UsersController
-
   @Patch('profile')
-  @UseGuards(JWTAuthGuard)
   async updateProfile(
     @Request() req,
     @Body() updateProfileDto: UpdateProfileDto,
@@ -99,51 +195,13 @@ export class UsersController {
   }
 
   @Get('profile')
-  @UseGuards(JWTAuthGuard) // Fixed casing
   async getProfile(@Request() req) {
     return this.usersService.findById(req.user.id);
   }
 
   @Post('profile/avatar')
-  @UseGuards(JWTAuthGuard) // Fixed casing
   @UseInterceptors(FileInterceptor('file'))
   async uploadAvatar(@Request() req, @UploadedFile() file) {
     return this.usersService.updateAvatar(req.user.id, file);
   }
-}
-
-@Get()
-@UseGuards(JWTAuthGuard)
-@ApiOperation({ 
-  summary: 'Find user by identifier',
-  description: 'Retrieves a user by their email or phone number identifier.'
-})
-@ApiQuery({
-  name: 'identifier',
-  required: true,
-  description: 'Email address or phone number of the user to find',
-  example: 'user@example.com'
-})
-@ApiResponse({ 
-  status: 200, 
-  description: 'User found',
-  schema: {
-    properties: {
-      id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
-      email: { type: 'string', example: 'user@example.com' },
-      phoneNumber: { type: 'string', example: '+1234567890' },
-      emailVerified: { type: 'boolean', example: true },
-      createdAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' },
-      updatedAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' }
-    }
-  }
-})
-@ApiResponse({ status: 404, description: 'User not found' })
-@ApiResponse({ status: 401, description: 'Unauthorized - Valid JWT token required' })
-async findOne(@Query('identifier') identifier: string) {
-  const user = await this.usersService.findByEmailOrPhoneNumber(identifier);
-  if (!user) {
-    throw new NotFoundException('User not found');
-  }
-  return user;
 }
