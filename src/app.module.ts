@@ -15,7 +15,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { DispatchModule } from './dispatch/dispatch.module';
 import { PaymentModule } from './payment/payment.module';
 import { TrackingModule } from './tracking/tracking.module';
-import { ApiGatewayModule } from './api-gateway/api-gateway.module'; // Add this import
+import { ApiGatewayModule } from './api-gateway/api-gateway.module';
 import { WinstonModule } from 'nest-winston';
 import { format, transports } from 'winston';
 import { MonitoringModule } from './monitoring/monitoring.module';
@@ -97,15 +97,16 @@ import { RedisHealth } from './health/redis-health';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: async (configService: ConfigService) => {
-        const redisUrl = configService.get<string>('REDIS_URL');
-        if (!redisUrl) {
-          throw new Error('REDIS_URL environment variable must be defined');
-        }
-
+        const redisUrl = configService.get('REDIS_URL');
+        
         return {
           store: redisInsStore,
           url: redisUrl,
-          ttl: 60,
+          ttl: 60, // seconds
+          // Add error handling
+          onError: (error) => {
+            console.error('Redis cache error:', error);
+          },
         };
       },
     }),
@@ -119,7 +120,7 @@ import { RedisHealth } from './health/redis-health';
     NotificationsModule,
     DispatchModule,
     TrackingModule,
-    ApiGatewayModule, // Add the API Gateway module here
+    ApiGatewayModule,
     MonitoringModule,
 
     // Add rate limiting
@@ -133,7 +134,8 @@ import { RedisHealth } from './health/redis-health';
         },
       ],
     }),
-    // Move WinstonModule inside the imports array
+    
+    // Winston logging configuration
     WinstonModule.forRootAsync({
       useFactory: (config: ConfigService) => ({
         level: config.get('LOG_LEVEL') || 'info',
@@ -178,14 +180,13 @@ import { RedisHealth } from './health/redis-health';
       provide: APP_INTERCEPTOR,
       useClass: MetricsInterceptor,
     },
-    // Redis client provider
+    // Redis client provider - updated to use REDIS_URL
     {
       provide: 'REDIS_CLIENT',
-      useFactory: (config: ConfigService) =>
-        new Redis({
-          host: config.get('REDIS_HOST'),
-          port: config.get('REDIS_PORT'),
-        }),
+      useFactory: (config: ConfigService) => {
+        const redisUrl = config.get('REDIS_URL');
+        return new Redis(redisUrl);
+      },
       inject: [ConfigService],
     },
     // Redis health check provider
