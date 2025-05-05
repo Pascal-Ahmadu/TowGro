@@ -15,6 +15,7 @@ export class CreateDispatchDto {
   @ApiProperty({
     description: 'UUID of the user requesting the dispatch',
     example: '123e4567-e89b-12d3-a456-426614174000',
+    required: true
   })
   @IsUUID()
   @IsNotEmpty()
@@ -39,9 +40,10 @@ export class CreateDispatchDto {
   readonly pickupLng: number;
 
   @ApiProperty({
-    description: 'Type of vehicle requested for the dispatch',
+    description: 'Vehicle type required for dispatch',
     enum: ['flatbed', 'tow'],
     example: 'flatbed',
+    required: true
   })
   @IsEnum(['flatbed', 'tow'], {
     message: 'Vehicle type must be either flatbed or tow',

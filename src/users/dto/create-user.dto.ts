@@ -11,7 +11,7 @@ import {
 
 export class CreateUserDto {
   @ValidateIf((o) => !o.phoneNumber)
-  @IsEmail({}, { message: 'Email must be a valid email address' })
+  @IsEmail({}, { message: 'Valid email address is required' })
   @IsOptional()
   email?: string;
 
@@ -19,7 +19,7 @@ export class CreateUserDto {
   @IsMobilePhone(
     'en-US',
     {},
-    { message: 'Phone number must be a valid mobile number' },
+    { message: 'Valid phone number required' }
   )
   @IsOptional()
   phoneNumber?: string;

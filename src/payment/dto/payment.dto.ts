@@ -81,8 +81,10 @@ export class CreatePaymentDto extends BasePaymentDto {
    * @example "NGN"
    */
   @ApiProperty({
-    description: 'ISO currency code',
-    example: 'NGN',
+    description: 'Payment amount in kobo (NGN)',
+    example: 500000, // Represents ₦5,000
+    minimum: 100,
+    type: Number
   })
   @IsNotEmpty({ message: 'Currency is required' })
   @IsString({ message: 'Currency must be a string' })
