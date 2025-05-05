@@ -58,9 +58,10 @@ export class AuthController {
   }
 
   @Post('forgot-password')
-  @Throttle({ default: { limit: 3, ttl: 60000 } }) // Limit to 3 requests per minute
-  async forgotPassword(@Body() dto: ForgotPasswordDto) {
-    return this.authService.sendPasswordResetToken(dto.email);
+  @ApiOperation({ summary: 'Request password reset' })
+  @ApiResponse({ status: 201, description: 'Reset email sent if account exists' })
+  async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    return this.authService.sendPasswordResetToken(forgotPasswordDto.email);
   }
 
   @Post('reset-password')

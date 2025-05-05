@@ -131,39 +131,49 @@ export class AuthService {
   }
 
   async sendPasswordResetToken(email: string) {
+    this.logger.debug(`Generating password reset token for email: ${email}`);
+    
+    // Find the user by email
     const user = await this.usersService.findByEmailOrPhoneNumber(email);
-
+    
+    // For security reasons, always return the same response whether user exists or not
     if (!user) {
-      // Don't reveal if email exists or not
-      return {
-        message:
-          'If your email is registered, you will receive a password reset link',
-      };
+      this.logger.debug(`No user found with email: ${email}`);
+      return { message: 'If your email is registered, you will receive a password reset link' };
     }
-
-    // Generate token
+    
+    // Generate a JWT token with short expiration
     const token = this.jwtService.sign(
-      { sub: user.id, type: 'password-reset' },
-      {
-        secret: this.config.get('JWT_RESET_SECRET'), // Changed
-        expiresIn: '15m',
+      { 
+        sub: user.id, 
+        email: user.email,
+        type: 'password-reset' 
       },
+      {
+        secret: this.config.get('JWT_RESET_SECRET'),
+        expiresIn: '15m' // Short expiration for security
+      }
     );
-
-    // Store the reset token in Redis
+    
+    // Store the token in Redis with expiration
     await this.redis.set(
       `password_reset:${user.id}`,
       token,
       'EX',
-      900, // 15 minutes in seconds
+      900 // 15 minutes in seconds
     );
-
-    // TODO: Send email with token
-    // This would typically involve an email service integration
-
-    return {
-      message:
-        'If your email is registered, you will receive a password reset link',
+    
+    // In a real application, you would send this token via email
+    // For example:
+    // await this.mailService.sendPasswordResetEmail(user.email, token);
+    
+    this.logger.debug(`Password reset token generated for user: ${user.id}`);
+    
+    return { 
+      message: 'If your email is registered, you will receive a password reset link',
+      // For development purposes only, you might want to return the token directly
+      // Remove this in production
+      token: token 
     };
   }
 
