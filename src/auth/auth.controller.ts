@@ -24,6 +24,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { BiometricRegisterDto } from './dto/biometric-register.dto';
+import { BiometricAuthenticateDto } from './dto/biometric-authenticate.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -138,17 +139,29 @@ export class AuthController {
   }
 
   @Post('biometric/authenticate')
-  @ApiOperation({ summary: 'Authenticate with biometrics' })
-  @ApiResponse({ status: 200, description: 'Authentication successful' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
-  async authenticateWithBiometric(
-    @Body()
-    data: {
-      userId: string;
-      biometricId: string;
-      type: 'fingerprint' | 'faceId';
-    },
-  ) {
+  @ApiOperation({ 
+    summary: 'Authenticate with biometrics',
+    description: 'Authenticate a user using their registered biometric data (fingerprint or faceId)'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Authentication successful',
+    schema: {
+      properties: {
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        refreshToken: { type: 'string', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' },
+        user: { 
+          type: 'object',
+          properties: {
+            id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+            email: { type: 'string', example: 'user@example.com' }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid biometric data' })
+  async authenticateWithBiometric(@Body() data: BiometricAuthenticateDto) {
     return this.authService.authenticateWithBiometric(
       data.userId,
       data.biometricId,
