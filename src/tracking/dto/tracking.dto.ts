@@ -24,6 +24,10 @@ export class UpdateLocationDto {
   @IsNotEmpty()
   vehicleId: string;
 
+  @IsUUID()
+  @IsNotEmpty()
+  dispatchId: string;
+
   @IsNumber()
   @IsNotEmpty()
   latitude: number;
