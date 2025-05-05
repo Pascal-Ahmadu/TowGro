@@ -1,4 +1,4 @@
-import { forwardRef, Module } from '@nestjs/common';
+import { forwardRef, Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { CacheModule } from '@nestjs/cache-manager';
 import { TypeOrmModule } from '@nestjs/typeorm';
@@ -25,6 +25,8 @@ import { TerminusModule } from '@nestjs/terminus';
 import { HealthController } from './health/health.controller';
 import { Redis } from 'ioredis';
 import { RedisHealth } from './health/redis-health';
+import { IpFilterMiddleware } from './common/middleware/ip-filter.middleware';
+
 
 @Module({
   imports: [
@@ -196,4 +198,10 @@ import { RedisHealth } from './health/redis-health';
     },
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(IpFilterMiddleware)
+      .forRoutes('*');
+  }
+}
