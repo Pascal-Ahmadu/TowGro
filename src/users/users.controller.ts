@@ -30,9 +30,8 @@ import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 
-@ApiTags('Users')
 @Controller('users')
-@UseGuards(JWTAuthGuard)
+@UseGuards(JWTAuthGuard) // Add guard at controller level
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
 
@@ -40,15 +39,7 @@ export class UsersController {
 
   @Get()
   @CacheKey('all-users')
-  @CacheTTL(30)
-  @ApiOperation({ 
-    summary: 'Get paginated users list',
-    description: 'Retrieve users with optional search and pagination'
-  })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
-  @ApiQuery({ name: 'search', required: false, type: String })
-  @ApiResponse({ status: 200, description: 'Users list retrieved successfully' })
+  @CacheTTL(30) // 30 seconds
   async findAll(
     @Query('identifier') identifier?: string,
     @Query('page', new DefaultValuePipe(1), ParseIntPipe) page = 1,
