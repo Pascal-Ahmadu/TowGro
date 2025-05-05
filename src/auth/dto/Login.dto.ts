@@ -1,5 +1,5 @@
-const { IsString, MinLength } = require('class-validator');
-const { ApiProperty } = require('@nestjs/swagger');
+import { IsString, MinLength } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class LoginDto {
   @ApiProperty({
@@ -8,7 +8,7 @@ export class LoginDto {
     required: true
   })
   @IsString()
-  identifier;
+  identifier: string;
 
   @ApiProperty({
     description: 'Password (min 8 characters)',
@@ -18,7 +18,7 @@ export class LoginDto {
   })
   @IsString()
   @MinLength(8)
-  password;
+  password: string;
 }
 
 module.exports = LoginDto;
