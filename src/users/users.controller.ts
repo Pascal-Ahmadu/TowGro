@@ -111,3 +111,39 @@ export class UsersController {
     return this.usersService.updateAvatar(req.user.id, file);
   }
 }
+
+@Get()
+@UseGuards(JWTAuthGuard)
+@ApiOperation({ 
+  summary: 'Find user by identifier',
+  description: 'Retrieves a user by their email or phone number identifier.'
+})
+@ApiQuery({
+  name: 'identifier',
+  required: true,
+  description: 'Email address or phone number of the user to find',
+  example: 'user@example.com'
+})
+@ApiResponse({ 
+  status: 200, 
+  description: 'User found',
+  schema: {
+    properties: {
+      id: { type: 'string', example: '123e4567-e89b-12d3-a456-426614174000' },
+      email: { type: 'string', example: 'user@example.com' },
+      phoneNumber: { type: 'string', example: '+1234567890' },
+      emailVerified: { type: 'boolean', example: true },
+      createdAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' },
+      updatedAt: { type: 'string', format: 'date-time', example: '2023-06-15T14:30:00Z' }
+    }
+  }
+})
+@ApiResponse({ status: 404, description: 'User not found' })
+@ApiResponse({ status: 401, description: 'Unauthorized - Valid JWT token required' })
+async findOne(@Query('identifier') identifier: string) {
+  const user = await this.usersService.findByEmailOrPhoneNumber(identifier);
+  if (!user) {
+    throw new NotFoundException('User not found');
+  }
+  return user;
+}

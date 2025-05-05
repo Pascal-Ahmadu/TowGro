@@ -197,9 +197,37 @@ export class AuthController {
 
   @Get('biometric/methods')
   @UseGuards(JWTAuthGuard)
-  @ApiOperation({ summary: 'Get available biometric methods' })
-  @ApiResponse({ status: 200, description: 'List of available methods' })
-  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  @ApiOperation({ 
+    summary: 'Get available biometric methods',
+    description: 'Retrieves all biometric authentication methods registered for the authenticated user.'
+  })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'List of available methods',
+    schema: {
+      properties: {
+        methods: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              type: { 
+                type: 'string', 
+                enum: ['fingerprint', 'faceId'],
+                example: 'fingerprint' 
+              },
+              registeredAt: { 
+                type: 'string', 
+                format: 'date-time',
+                example: '2023-06-15T14:30:00Z' 
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Unauthorized - Valid JWT token required' })
   async getBiometricMethods(@Req() req) {
     return this.authService.getBiometricMethods(req.user.id);
   }
