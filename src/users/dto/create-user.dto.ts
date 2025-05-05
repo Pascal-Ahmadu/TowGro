@@ -8,13 +8,24 @@ import {
   ValidateIf,
   Matches,
 } from 'class-validator';
+import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserDto {
+  @ApiProperty({
+    description: 'User email address (required if phone number not provided)',
+    example: 'user@example.com',
+    required: false
+  })
   @ValidateIf((o) => !o.phoneNumber)
   @IsEmail({}, { message: 'Valid email address is required' })
   @IsOptional()
   email?: string;
 
+  @ApiProperty({
+    description: 'User phone number (required if email not provided)',
+    example: '+1234567890',
+    required: false
+  })
   @ValidateIf((o) => !o.email)
   @IsMobilePhone(
     'en-US',
@@ -24,6 +35,12 @@ export class CreateUserDto {
   @IsOptional()
   phoneNumber?: string;
 
+  @ApiProperty({
+    description: 'User password',
+    example: 'StrongP@ssw0rd',
+    required: true,
+    minLength: 8
+  })
   @IsString()
   @MinLength(8, { message: 'Password must be at least 8 characters long' })
   @Matches(
