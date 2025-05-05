@@ -24,6 +24,7 @@ import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 
+@ApiTags('Authentication')
 @Controller('auth')
 @Throttle({
   default: { limit: 10, ttl: 60000 },
@@ -43,6 +44,18 @@ export class AuthController {
 
   @Post('refresh')
   @UseGuards(JWTAuthGuard)
+  @ApiOperation({ summary: 'Refresh access token using refresh token' })
+  @ApiResponse({ 
+    status: 200, 
+    description: 'Token refreshed successfully',
+    schema: {
+      properties: {
+        accessToken: { type: 'string', example: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...' },
+        refreshToken: { type: 'string', example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890' }
+      }
+    }
+  })
+  @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
   async refresh(@Body() dto: RefreshTokenDto, @Req() req) {
     return this.authService.refreshToken(req.user.id, dto.refreshToken);
   }
