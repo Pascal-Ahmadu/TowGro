@@ -30,7 +30,15 @@ import { UsersService } from './users.service';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { ApiTags, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { 
+  ApiTags, 
+  ApiOperation, 
+  ApiResponse, 
+  ApiQuery,
+  ApiParam,
+  ApiBody,
+  ApiOkResponse
+} from '@nestjs/swagger';
 
 @Controller('users')
 @UseGuards(JWTAuthGuard) // Add guard at controller level
@@ -171,6 +179,38 @@ export class UsersController {
   }
 
   @Put(':id')
+  @ApiOperation({ summary: 'Update user details' })
+  @ApiParam({ name: 'id', description: 'User UUID', example: '123e4567-e89b-12d3-a456-426614174000' })
+  @ApiBody({ 
+    type: UpdateUserDto,
+    examples: {
+      basic: {
+        value: {
+          email: "updated@example.com",
+          phoneNumber: "+1234567890",
+          isActive: true,
+          roles: "user,admin",
+          avatarUrl: "https://example.com/avatar.jpg"
+        }
+      }
+    } 
+  })
+  @ApiOkResponse({
+    description: 'Successfully updated user',
+    schema: {
+      example: {
+        id: '123e4567-e89b-12d3-a456-426614174000',
+        email: 'updated@example.com',
+        phoneNumber: '+1234567890',
+        isActive: true,
+        roles: 'user,admin',
+        emailVerified: true,
+        createdAt: '2023-06-15T14:30:00Z',
+        updatedAt: '2023-06-15T15:45:00Z',
+        avatarUrl: 'https://example.com/avatar.jpg'
+      }
+    }
+  })
   async update(
     @Param('id') id: string,
     @Body() updateUserDto: UpdateUserDto,
