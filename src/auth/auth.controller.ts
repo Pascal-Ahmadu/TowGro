@@ -42,28 +42,10 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  @ApiResponse({ 
-    status: 401,
-    description: 'Invalid credentials',
-    schema: {
-      properties: {
-        errorType: { type: 'string', example: 'AUTH_INVALID_CREDENTIALS' },
-        message: { type: 'string', example: 'Invalid email or password' }
-      }
-    }
-  })
+  @UseGuards(LocalAuthGuard, ThrottlerGuard)
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() loginDto: LoginDto) {
-    try {
-      return await this.authService.validateUser(loginDto.identifier, loginDto.password);
-    } catch (error) {
-      throw new HttpException(
-        { 
-          errorType: 'AUTH_INVALID_CREDENTIALS',
-          message: 'Invalid email or password' 
-        },
-        HttpStatus.UNAUTHORIZED
-      );
-    }
+    return this.authService.validateUser(loginDto.identifier, loginDto.password);
   }
 
   @Post('refresh')
@@ -265,3 +247,11 @@ export class AuthController {
     return this.authService.logout(req.user.id);
   }
 }
+
+throw new HttpException(
+  {
+    errorType: 'USER_NOT_FOUND',
+    message: 'No user with that email exists'
+  },
+  HttpStatus.NOT_FOUND
+);
