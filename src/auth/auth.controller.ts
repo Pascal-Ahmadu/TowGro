@@ -23,13 +23,13 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
-import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'; // Modified this line
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { BiometricRegisterDto } from './dto/biometric-register.dto';
 import { BiometricAuthenticateDto } from './dto/biometric-authenticate.dto';
 import { BiometricType } from './dto/biometric-register.dto'; // Or the correct path to your enum
-import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'; // Or the correct path to your decorators
 
 @Controller('auth')
+@ApiTags('auth')
 @Throttle({
   default: { limit: 10, ttl: 60000 },
 })
@@ -163,8 +163,7 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid biometric data' })
-  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid biometric data' })
-  async authenticateWithBiometric(@Body() data: BiometricAuthenticateDto) { // This line had an error
+  async authenticateWithBiometric(@Body() data: BiometricAuthenticateDto) {
     return this.authService.authenticateWithBiometric(
       data.userId,
       data.biometricId,
@@ -192,7 +191,7 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not Found - Biometric method not registered' })
   async removeBiometric(
     @Req() req,
-    @Param('type', new ParseEnumPipe(BiometricType)) type: BiometricType, // These lines had errors
+    @Param('type', new ParseEnumPipe(BiometricType)) type: BiometricType,
   ) {
     return this.authService.removeBiometric(req.user.id, type);
   }
@@ -237,7 +236,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JWTAuthGuard)
   @ApiOperation({ summary: 'Logout user' })
-  @ApiBearerAuth() // This line had an error
+  @ApiBearerAuth()
   @ApiResponse({ status: 200, description: 'Successfully logged out' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(@Req() req) {
