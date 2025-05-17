@@ -22,8 +22,9 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 
+@ApiTags('auth') // This line might already exist, ensure it's there
 @Controller('auth')
 @Throttle({
   default: { limit: 10, ttl: 60000 },
@@ -148,5 +149,17 @@ export class AuthController {
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async getBiometricMethods(@Req() req) {
     return this.authService.getBiometricMethods(req.user.id);
+  }
+
+  @Post('logout')
+  @UseGuards(JWTAuthGuard)
+  @ApiOperation({ summary: 'Logout user' })
+  @ApiBearerAuth() // If you are using Bearer token authentication
+  @ApiResponse({ status: 200, description: 'Successfully logged out' })
+  @ApiResponse({ status: 401, description: 'Unauthorized' })
+  async logout(@Req() req) {
+    // Assuming JWTAuthGuard adds the user object to the request
+    // and that user object has an 'id' property.
+    return this.authService.logout(req.user.id);
   }
 }
