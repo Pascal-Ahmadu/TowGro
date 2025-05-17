@@ -24,6 +24,7 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { BiometricRegisterDto } from './dto/biometric-register.dto'; // Add this import
 
 @Controller('auth')
 @Throttle({
@@ -127,7 +128,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid biometric data' })
   async registerBiometric(
     @Req() req,
-    @Body() data: BiometricRegisterDto,
+    @Body() data: BiometricRegisterDto, // This line causes the error if DTO is not imported
   ) {
     return this.authService.registerBiometric(
       req.user.id,
