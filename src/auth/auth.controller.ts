@@ -8,7 +8,9 @@ import {
   Param,
   Delete,
   Request,
-  ParseEnumPipe
+  ParseEnumPipe,
+  HttpException,
+  HttpStatus
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './guards/local-auth.guard';
@@ -40,10 +42,28 @@ export class AuthController {
   ) {}
 
   @Post('login')
-  @Throttle({ default: { limit: 5, ttl: 60000 } })
+  @ApiResponse({ 
+    status: 401,
+    description: 'Invalid credentials',
+    schema: {
+      properties: {
+        errorType: { type: 'string', example: 'AUTH_INVALID_CREDENTIALS' },
+        message: { type: 'string', example: 'Invalid email or password' }
+      }
+    }
+  })
   async login(@Body() loginDto: LoginDto) {
-    // Directly use the DTO for validation
-    return this.authService.validateUser(loginDto.identifier, loginDto.password);
+    try {
+      return await this.authService.validateUser(loginDto.identifier, loginDto.password);
+    } catch (error) {
+      throw new HttpException(
+        { 
+          errorType: 'AUTH_INVALID_CREDENTIALS',
+          message: 'Invalid email or password' 
+        },
+        HttpStatus.UNAUTHORIZED
+      );
+    }
   }
 
   @Post('refresh')
