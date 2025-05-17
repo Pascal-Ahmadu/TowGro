@@ -1,19 +1,28 @@
 import session from 'express-session';
 import connectRedis from 'connect-redis';
 import { createClient } from 'redis';
-import 'reflect-metadata';  // Add this as FIRST import
+import 'reflect-metadata'; 
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, Logger } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import compression from 'compression';
 import { MetricsService } from './monitoring/metrics.service';
-// Add this import for GlobalExceptionFilter
+import { ConfigService } from '@nestjs/config'
 import { GlobalExceptionFilter } from './common/middleware/error-handler.middleware';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+  const configService = app.get(ConfigService);
+  
+  // Configure CORS
+  app.enableCors({
+    origin: configService.get('CORS_ORIGINS', '').split(','),
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    credentials: true,
+    maxAge: 3600,
+  });
   const logger = new Logger('Bootstrap');
 
   // Global validation pipe
@@ -55,6 +64,7 @@ async function bootstrap() {
   SwaggerModule.setup('api/docs', app, document);
 
   // Security middleware
+  // Use Helmet for security headers
   app.use(helmet());
 
   // Compression

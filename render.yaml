@@ -39,5 +39,8 @@ services:
 
   - type: redis
     name: towgrow-redis
-    ipAllowList: []
-    plan: free
+    # Ensure your Redis service configuration matches this
+    - type: redis
+      name: towgrow-redis
+      plan: free
+      ipAllowList: []
