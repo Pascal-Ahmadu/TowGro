@@ -23,8 +23,11 @@ import { ResetPasswordDto } from './dto/reset-password.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 import { UsersService } from '../users/users.service';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { BiometricRegisterDto } from './dto/biometric-register.dto'; // Add this import
+import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger'; // Modified this line
+import { BiometricRegisterDto } from './dto/biometric-register.dto';
+import { BiometricAuthenticateDto } from './dto/biometric-authenticate.dto';
+import { BiometricType } from './dto/biometric-register.dto'; // Or the correct path to your enum
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger'; // Or the correct path to your decorators
 
 @Controller('auth')
 @Throttle({
@@ -128,7 +131,7 @@ export class AuthController {
   @ApiResponse({ status: 400, description: 'Bad Request - Invalid biometric data' })
   async registerBiometric(
     @Req() req,
-    @Body() data: BiometricRegisterDto, // This line causes the error if DTO is not imported
+    @Body() data: BiometricRegisterDto, 
   ) {
     return this.authService.registerBiometric(
       req.user.id,
@@ -160,7 +163,8 @@ export class AuthController {
     }
   })
   @ApiResponse({ status: 401, description: 'Unauthorized - Invalid biometric data' })
-  async authenticateWithBiometric(@Body() data: BiometricAuthenticateDto) {
+  @ApiResponse({ status: 401, description: 'Unauthorized - Invalid biometric data' })
+  async authenticateWithBiometric(@Body() data: BiometricAuthenticateDto) { // This line had an error
     return this.authService.authenticateWithBiometric(
       data.userId,
       data.biometricId,
@@ -188,7 +192,7 @@ export class AuthController {
   @ApiResponse({ status: 404, description: 'Not Found - Biometric method not registered' })
   async removeBiometric(
     @Req() req,
-    @Param('type', new ParseEnumPipe(BiometricType)) type: BiometricType,
+    @Param('type', new ParseEnumPipe(BiometricType)) type: BiometricType, // These lines had errors
   ) {
     return this.authService.removeBiometric(req.user.id, type);
   }
@@ -233,7 +237,7 @@ export class AuthController {
   @Post('logout')
   @UseGuards(JWTAuthGuard)
   @ApiOperation({ summary: 'Logout user' })
-  @ApiBearerAuth() // If you are using Bearer token authentication
+  @ApiBearerAuth() // This line had an error
   @ApiResponse({ status: 200, description: 'Successfully logged out' })
   @ApiResponse({ status: 401, description: 'Unauthorized' })
   async logout(@Req() req) {
