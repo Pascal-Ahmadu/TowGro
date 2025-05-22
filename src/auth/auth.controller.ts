@@ -45,6 +45,17 @@ export class AuthController {
   @UseGuards(LocalAuthGuard, ThrottlerGuard)
   @Throttle({ default: { limit: 5, ttl: 60000 } })
   async login(@Body() loginDto: LoginDto) {
+    // Check if user exists before attempting validation
+    const user = await this.usersService.findByEmailOrPhoneNumber(loginDto.identifier);
+    if (!user) {
+      throw new HttpException(
+        {
+          errorType: 'USER_NOT_FOUND',
+          message: 'No user with that email exists'
+        },
+        HttpStatus.NOT_FOUND
+      );
+    }
     return this.authService.validateUser(loginDto.identifier, loginDto.password);
   }
 
@@ -80,6 +91,17 @@ export class AuthController {
   @ApiOperation({ summary: 'Request password reset' })
   @ApiResponse({ status: 201, description: 'Reset email sent if account exists' })
   async forgotPassword(@Body() forgotPasswordDto: ForgotPasswordDto) {
+    // Check if user exists before sending reset email
+    const user = await this.usersService.findByEmailOrPhoneNumber(forgotPasswordDto.email);
+    if (!user) {
+      throw new HttpException(
+        {
+          errorType: 'USER_NOT_FOUND',
+          message: 'No user with that email exists'
+        },
+        HttpStatus.NOT_FOUND
+      );
+    }
     return this.authService.sendPasswordResetToken(forgotPasswordDto.email);
   }
 
@@ -104,14 +126,20 @@ export class AuthController {
     return this.authService.register(createUserDto);
   }
 
-
   @Get('debug/user-exists/:email')
   async checkUserExists(@Param('email') email: string) {
     const user = await this.usersService.findByEmailOrPhoneNumber(email);
+    if (!user) {
+      throw new HttpException(
+        {
+          errorType: 'USER_NOT_FOUND',
+          message: 'No user with that email exists'
+        },
+        HttpStatus.NOT_FOUND
+      );
+    }
     return { exists: !!user, email };
   }
-
-
 
   @Post('biometric/register')
   @UseGuards(JWTAuthGuard)
