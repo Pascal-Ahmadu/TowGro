@@ -247,11 +247,3 @@ export class AuthController {
     return this.authService.logout(req.user.id);
   }
 }
-
-throw new HttpException(
-  {
-    errorType: 'USER_NOT_FOUND',
-    message: 'No user with that email exists'
-  },
-  HttpStatus.NOT_FOUND
-);
